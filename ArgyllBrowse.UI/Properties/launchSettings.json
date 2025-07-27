@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "ArgyllBrowse.UI (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "ArgyllBrowse.UI (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
