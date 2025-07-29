@@ -8,13 +8,6 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <!--
-        CanTearOutTabs="True"
-        ExternalTornOutTabsDropped="TabView_ExternalTornOutTabsDropped"
-        ExternalTornOutTabsDropping="TabView_ExternalTornOutTabsDropping"
-        TabTearOutRequested="TabView_TabTearOutRequested"
-        TabTearOutWindowRequested="TabView_TabTearOutWindowRequested"
-    -->
     <TabView
         x:Name="tabView"
         VerticalAlignment="Stretch"

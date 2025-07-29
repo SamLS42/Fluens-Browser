@@ -31,21 +31,6 @@ public sealed partial class AppWindow : Window
 
     internal void ApplyOnStartupSetting(OnStartupSetting onStartupSetting)
     {
-        switch (onStartupSetting)
-        {
-            case OnStartupSetting.OpenNewTab:
-                Page.AddNewTab();
-                break;
-            case OnStartupSetting.RestoreOpenTabs:
-                Page.ViewModel!.RestoreOpenTabs();
-                break;
-            case OnStartupSetting.OpenSpecificTabs:
-                break;
-            case OnStartupSetting.RestoreAndOpenNewTab:
-                break;
-            default:
-                Page.AddNewTab();
-                break;
-        }
+        Page.ApplyOnStartupSetting(onStartupSetting);
     }
 }

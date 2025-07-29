@@ -9,13 +9,23 @@ using System.Threading.Tasks;
 namespace ArgyllBrowse.Data.Services;
 public class BrowserDataService(IDbContextFactory<BrowserDbContext> dbContextFactory)
 {
-    public async Task<BrowserTab[]> GetOpenTabs()
+    public async Task<BrowserTab[]> GetOpenTabsAsync()
     {
         await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync();
 
         BrowserTab[] openTabs = await dbContext.OpenTabs
+            .OrderBy(t => t.Index)
             .AsNoTracking()
             .ToArrayAsync();
+
+        return openTabs;
+    }
+
+    public BrowserTab[] GetOpenTabs()
+    {
+        using BrowserDbContext dbContext = dbContextFactory.CreateDbContext();
+
+        BrowserTab[] openTabs = [.. dbContext.OpenTabs.OrderBy(t => t.Index).AsNoTracking()];
 
         return openTabs;
     }
@@ -35,15 +45,7 @@ public class BrowserDataService(IDbContextFactory<BrowserDbContext> dbContextFac
         return entity.Id;
     }
 
-    public async Task<int> CreateTabAsync(Uri url)
-    {
-        await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync();
-
-        ArgumentNullException.ThrowIfNull(url);
-        return (await dbContext.OpenTabs.AddAsync(new BrowserTab() { Url = url.ToString() })).Entity.Id;
-    }
-
-    public async Task SaveTabStateAsync(int id, int index, Uri url)
+    public async Task SaveTabStateAsync(int id, int index, Uri url, bool isTabSelected)
     {
         await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync();
 
@@ -52,7 +54,8 @@ public class BrowserDataService(IDbContextFactory<BrowserDbContext> dbContextFac
             .ExecuteUpdateAsync(u => u
                 .SetProperty(t => t.Index, index)
                 .SetProperty(t => t.Url, url.ToString())
-            );
+                .SetProperty(t => t.IsTabSelected, isTabSelected)
+                );
     }
 
     public async Task DeleteTabAsync(int id)

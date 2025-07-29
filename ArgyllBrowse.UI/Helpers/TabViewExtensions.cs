@@ -17,7 +17,7 @@ internal static class TabViewExtensions
     private static readonly FontIconSource loadingPageIcon = new() { Glyph = "\uF16A" };
     private static readonly FontIconSource blankPageIcon = new() { Glyph = "\uE909" };
 
-    internal static void AddNewAppTab(this TabView tabView)
+    internal static void AddNewAppTab(this TabView tabView, Uri? uri = null, bool isSelected = true)
     {
         ArgumentNullException.ThrowIfNull(tabView);
 
@@ -32,12 +32,30 @@ internal static class TabViewExtensions
         };
 
         tabView.TabItems.Add(newTab);
-        tabView.SelectedItem = newTab;
 
-        appTab.ViewModel?.DocumentTitleChanges.Subscribe(title => newTab.Header = title.Equals(Constants.AboutBlankUri, StringComparison.Ordinal) ? "New Tab" : title)
+        if (isSelected)
+        {
+            tabView.SelectedItem = newTab;
+        }
+
+        SubscribeToTabChanges(appTab, appTabDisposable, newTab);
+
+        if (uri == null)
+        {
+            return;
+        }
+
+        appTab.ViewModel?.Url = uri;
+    }
+
+    private static void SubscribeToTabChanges(AppTab appTab, CompositeDisposable appTabDisposable, TabViewItem newTab)
+    {
+        appTab.ViewModel?.DocumentTitleChanges
+            .Subscribe(title => newTab.Header = title.Equals(Constants.AboutBlankUri, StringComparison.Ordinal) ? "New Tab" : title)
             .DisposeWith(appTabDisposable);
 
-        appTab.ViewModel?.NavigationStarting.Skip(1).Subscribe(_ => newTab.IconSource = loadingPageIcon)
+        appTab.ViewModel?.NavigationStarting.Skip(1)
+            .Subscribe(_ => newTab.IconSource = loadingPageIcon)
             .DisposeWith(appTabDisposable);
 
         appTab.ViewModel?.NavigationCompleted
@@ -45,7 +63,8 @@ internal static class TabViewExtensions
             .Subscribe(faviconUrl => newTab.IconSource = GetTabIconSource(faviconUrl))
             .DisposeWith(appTabDisposable);
 
-        appTab.ViewModel?.Disposed.Subscribe(_ => appTabDisposable.Dispose())
+        appTab.ViewModel?.Disposed
+            .Subscribe(_ => appTabDisposable.Dispose())
             .DisposeWith(appTabDisposable);
     }
 

@@ -5,6 +5,7 @@ using ReactiveUI;
 using System;
 using System.Linq;
 using System.Reactive;
+using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
@@ -12,20 +13,38 @@ using System.Threading.Tasks;
 namespace ArgyllBrowse.UI.ViewModels;
 public partial class AppTabViewModel : ReactiveObject, IDisposable
 {
-    private IReactiveWebView ReactiveWebView { get; set; } = null!;
+    private readonly CompositeDisposable Disposables = [];
 
-    public IObservable<bool> IsLoading => ReactiveWebView.IsLoading.AsObservable();
+    private IReactiveWebView ReactiveWebView { get; set; } = null!;
     public IObservable<string> DocumentTitleChanges => ReactiveWebView.DocumentTitleChanges.AsObservable();
     public IObservable<string> FaviconUrl => ReactiveWebView.FaviconUrlChanges.AsObservable();
     public IObservable<Unit> NavigationStarting => ReactiveWebView.NavigationStarting.AsObservable();
     public IObservable<Unit> NavigationCompleted => ReactiveWebView.NavigationCompleted.AsObservable();
 
-
     private readonly Subject<Unit> disposed = new();
     public IObservable<Unit> Disposed => disposed.AsObservable();
 
     private int TabId { get; set; }
-    public int Index
+
+    public bool CanStop
+    {
+        get;
+        set => this.RaiseAndSetIfChanged(ref field, value);
+    }
+
+    public bool CanRefresh
+    {
+        get;
+        set => this.RaiseAndSetIfChanged(ref field, value);
+    }
+
+    public int? Index
+    {
+        get;
+        set => this.RaiseAndSetIfChanged(ref field, value);
+    }
+
+    public bool IsTabSelected
     {
         get;
         set => this.RaiseAndSetIfChanged(ref field, value);
@@ -64,22 +83,23 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
         TabId = browserDataService.CreateTab(Url);
 
         this.WhenAnyValue(x => x.Index)
-            .Where(index => index != 0)
-            .DistinctUntilChanged()
+            .WhereNotNull()
             .Select(_ => Unit.Default)
             .Merge(this.WhenAnyValue(x => x.Url)
-                .DistinctUntilChanged()
+                .SkipWhile(_ => Index is null)
+                .Select(_ => Unit.Default))
+            .Merge(this.WhenAnyValue(x => x.IsTabSelected)
+                .SkipWhile(_ => Index is null)
                 .Select(_ => Unit.Default))
             .Throttle(TimeSpan.FromSeconds(1))
             .Subscribe(async _ => await SaveTabStateAsync());
 
         this.WhenAnyValue(x => x.Url)
-            .Throttle(TimeSpan.FromMilliseconds(500)) //Sometime, the URL is set the about:blank during navigation, is a WebView2 behavior (I think)
             .ObserveOn(RxApp.MainThreadScheduler)
             .Subscribe(_ => UpdateSearchBar());
     }
 
-    public void SetEeactiveWebView(IReactiveWebView reactiveWebView)
+    public void SetReactiveWebView(IReactiveWebView reactiveWebView)
     {
         ReactiveWebView = reactiveWebView;
 
@@ -87,11 +107,15 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
         GoForward = ReactiveCommand.Create(ReactiveWebView.GoForward);
         Refresh = ReactiveCommand.Create(ReactiveWebView.Refresh);
         Stop = ReactiveCommand.Create(ReactiveWebView.StopNavigation);
+
+
+        ReactiveWebView.IsLoading.Subscribe(SetStopRefreshVisibility)
+            .DisposeWith(Disposables);
     }
 
     private async Task SaveTabStateAsync()
     {
-        await DataService.SaveTabStateAsync(TabId, Index, Url);
+        await DataService.SaveTabStateAsync(TabId, Index!.Value, Url, IsTabSelected);
     }
 
     private void NavigateToUrlImpl()
@@ -135,6 +159,7 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
         disposed.OnNext(Unit.Default);
         disposed.OnCompleted();
         disposed.Dispose();
+        Disposables.Dispose();
         ReactiveWebView.Dispose();
         Observable.FromAsync(_ => DataService.DeleteTabAsync(TabId)).Subscribe();
     }
@@ -146,5 +171,19 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
         SearchBarText = text.Equals(Constants.AboutBlankUri, StringComparison.Ordinal)
             ? string.Empty
             : text;
+    }
+
+    private void SetStopRefreshVisibility(bool showStopBtn)
+    {
+        if (showStopBtn)
+        {
+            CanStop = true;
+            CanRefresh = false;
+        }
+        else
+        {
+            CanStop = false;
+            CanRefresh = true;
+        }
     }
 }

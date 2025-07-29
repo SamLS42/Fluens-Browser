@@ -1,4 +1,5 @@
-﻿using ArgyllBrowse.Data.Services;
+﻿using ArgyllBrowse.Data.Entities;
+using ArgyllBrowse.Data.Services;
 using ArgyllBrowse.UI.Views;
 using DynamicData;
 using System;
@@ -10,12 +11,15 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace ArgyllBrowse.UI.ViewModels;
-public class AppPageViewModel()
+public class AppPageViewModel(BrowserDataService dataService)
 {
-    private SourceList<AppTabViewModel> OpenTabViewModels { get; } = new();
-
-    internal void RestoreOpenTabs()
+    public async Task<BrowserTab[]> GetOpenTabsAsync()
     {
-        return;
+        return await dataService.GetOpenTabsAsync();
+    }
+
+    public async Task DeleteTabAsync(int id)
+    {
+        await dataService.DeleteTabAsync(id);
     }
 }
