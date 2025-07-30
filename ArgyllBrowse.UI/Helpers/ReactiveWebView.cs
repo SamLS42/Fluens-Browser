@@ -18,6 +18,7 @@ internal sealed partial class ReactiveWebView : IReactiveWebView
     public BehaviorSubject<string> FaviconUrlChanges { get; } = new(string.Empty);
     public Subject<Unit> NavigationStarting { get; } = new();
     public Subject<Unit> NavigationCompleted { get; } = new();
+    public Subject<Uri> Url { get; } = new();
 
     public ReactiveWebView(WebView2 webView)
     {
@@ -48,6 +49,10 @@ internal sealed partial class ReactiveWebView : IReactiveWebView
             Observable.FromEventPattern(MyWebView.CoreWebView2, nameof(MyWebView.CoreWebView2.NavigationCompleted))
                 .Subscribe(_ => NavigationCompleted.OnNext(Unit.Default))
                 .DisposeWith(Disposables);
+
+            Observable.FromEventPattern<CoreWebView2, CoreWebView2SourceChangedEventArgs>(MyWebView.CoreWebView2, nameof(MyWebView.CoreWebView2.SourceChanged))
+                .Subscribe(_ => Url.OnNext(MyWebView.Source))
+                .DisposeWith(Disposables);
         }).DisposeWith(Disposables);
     }
 
@@ -75,10 +80,17 @@ internal sealed partial class ReactiveWebView : IReactiveWebView
 
     public void Dispose()
     {
-        DocumentTitleChanges.Dispose();
-        FaviconUrlChanges.Dispose();
-        NavigationStarting.Dispose();
-        NavigationCompleted.Dispose();
+        IsLoading.OnCompleted();
+        DocumentTitleChanges.OnCompleted();
+        FaviconUrlChanges.OnCompleted();
+        NavigationStarting.OnCompleted();
+        NavigationCompleted.OnCompleted();
+        Url.OnCompleted();
         Disposables.Dispose();
+    }
+
+    public void NavigateToUrl(Uri url)
+    {
+        MyWebView.Source = url;
     }
 }

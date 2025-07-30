@@ -7,5 +7,5 @@ using System.Threading.Tasks;
 namespace ArgyllBrowse.UI.ViewModels.Helpers;
 public static class Constants
 {
-    public const string AboutBlankUri = "about:blank";
+    public static readonly Uri AboutBlankUri = new("about:blank");
 }

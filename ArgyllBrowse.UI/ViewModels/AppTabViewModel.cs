@@ -2,70 +2,46 @@
 using ArgyllBrowse.UI.ViewModels.Contracts;
 using ArgyllBrowse.UI.ViewModels.Helpers;
 using ReactiveUI;
+using ReactiveUI.SourceGenerators;
 using System;
 using System.Linq;
 using System.Reactive;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using System.Security.Policy;
 using System.Threading.Tasks;
 
 namespace ArgyllBrowse.UI.ViewModels;
 public partial class AppTabViewModel : ReactiveObject, IDisposable
 {
-    private readonly CompositeDisposable Disposables = [];
-
     private IReactiveWebView ReactiveWebView { get; set; } = null!;
     public IObservable<string> DocumentTitleChanges => ReactiveWebView.DocumentTitleChanges.AsObservable();
     public IObservable<string> FaviconUrl => ReactiveWebView.FaviconUrlChanges.AsObservable();
     public IObservable<Unit> NavigationStarting => ReactiveWebView.NavigationStarting.AsObservable();
     public IObservable<Unit> NavigationCompleted => ReactiveWebView.NavigationCompleted.AsObservable();
 
-    private readonly Subject<Unit> disposed = new();
-    public IObservable<Unit> Disposed => disposed.AsObservable();
-
     private int TabId { get; set; }
 
-    public bool CanStop
-    {
-        get;
-        set => this.RaiseAndSetIfChanged(ref field, value);
-    }
+    [Reactive]
+    public partial bool CanStop { get; set; }
 
-    public bool CanRefresh
-    {
-        get;
-        set => this.RaiseAndSetIfChanged(ref field, value);
-    }
+    [Reactive]
+    public partial bool CanRefresh { get; set; }
 
-    public int? Index
-    {
-        get;
-        set => this.RaiseAndSetIfChanged(ref field, value);
-    }
+    [Reactive]
+    public partial int? Index { get; set; }
 
-    public bool IsTabSelected
-    {
-        get;
-        set => this.RaiseAndSetIfChanged(ref field, value);
-    }
+    [Reactive]
+    public partial bool IsTabSelected { get; set; }
 
-    public Uri Url
-    {
-        get;
-        set => this.RaiseAndSetIfChanged(ref field, value);
-    } = new Uri("about:blank");
+    [Reactive]
+    private partial Uri Url { get; set; } = Constants.AboutBlankUri;
 
-    private const string httpSufix = "http://";
-    private const string httpsSufix = "https://";
+    [Reactive]
+    public partial string SearchBarText { get; set; } = string.Empty;
 
-    public string SearchBarText
-    {
-        get;
-        set => this.RaiseAndSetIfChanged(ref field, value);
-    } = string.Empty;
-
-    public ReactiveCommand<Unit, Unit> NavigateToUrl { get; }
+    public ReactiveCommand<Unit, Unit> NavigateToSeachBarInput { get; }
     public ReactiveCommand<Unit, Unit> Refresh { get; private set; } = null!;
     public ReactiveCommand<Unit, Unit> GoBack { get; private set; } = null!;
     public ReactiveCommand<Unit, Unit> GoForward { get; private set; } = null!;
@@ -78,7 +54,7 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
         ArgumentNullException.ThrowIfNull(browserDataService);
         DataService = browserDataService;
 
-        NavigateToUrl = ReactiveCommand.Create(NavigateToUrlImpl);
+        NavigateToSeachBarInput = ReactiveCommand.Create(NavigateToSeachBarInputImpl);
 
         TabId = browserDataService.CreateTab(Url);
 
@@ -95,8 +71,7 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
             .Subscribe(async _ => await SaveTabStateAsync());
 
         this.WhenAnyValue(x => x.Url)
-            .ObserveOn(RxApp.MainThreadScheduler)
-            .Subscribe(_ => UpdateSearchBar());
+            .Subscribe(url => UpdateSearchBar());
     }
 
     public void SetReactiveWebView(IReactiveWebView reactiveWebView)
@@ -108,9 +83,9 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
         Refresh = ReactiveCommand.Create(ReactiveWebView.Refresh);
         Stop = ReactiveCommand.Create(ReactiveWebView.StopNavigation);
 
+        ReactiveWebView.IsLoading.Subscribe(SetStopRefreshVisibility);
 
-        ReactiveWebView.IsLoading.Subscribe(SetStopRefreshVisibility)
-            .DisposeWith(Disposables);
+        ReactiveWebView.Url.Subscribe(url => Url = url);
     }
 
     private async Task SaveTabStateAsync()
@@ -118,57 +93,20 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
         await DataService.SaveTabStateAsync(TabId, Index!.Value, Url, IsTabSelected);
     }
 
-    private void NavigateToUrlImpl()
+    private void NavigateToSeachBarInputImpl()
     {
-        SetUrlPrefix();
+        Uri url = Uri.TryCreate(SearchBarText, UriKind.Absolute, out Uri? result)
+            ? result.EnforceHttps()
+            : new Uri($"https://duckduckgo.com/?q={SearchBarText}");
 
-        if (Uri.TryCreate(SearchBarText, UriKind.Absolute, out Uri? result))
-        {
-            Url = result;
-        }
-        else
-        {
-            //TODO: Search using selected search engine
-        }
-    }
-
-    private void SetUrlPrefix()
-    {
-        if (SearchBarText.StartsWith(httpsSufix, StringComparison.OrdinalIgnoreCase))
-        {
-            return;
-        }
-
-        if (SearchBarText.StartsWith(httpSufix, StringComparison.OrdinalIgnoreCase))
-        {
-            SearchBarText = SearchBarText.Replace(httpSufix, httpsSufix, StringComparison.OrdinalIgnoreCase);
-            return;
-        }
-
-        SearchBarText = httpsSufix + SearchBarText;
-    }
-
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    protected virtual void Dispose(bool dispose)
-    {
-        disposed.OnNext(Unit.Default);
-        disposed.OnCompleted();
-        disposed.Dispose();
-        Disposables.Dispose();
-        ReactiveWebView.Dispose();
-        Observable.FromAsync(_ => DataService.DeleteTabAsync(TabId)).Subscribe();
+        ReactiveWebView?.NavigateToUrl(url);
     }
 
     private void UpdateSearchBar()
     {
         string text = Url.ToString();
 
-        SearchBarText = text.Equals(Constants.AboutBlankUri, StringComparison.Ordinal)
+        SearchBarText = text.Equals(Constants.AboutBlankUri.ToString(), StringComparison.Ordinal)
             ? string.Empty
             : text;
     }
@@ -185,5 +123,17 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
             CanStop = false;
             CanRefresh = true;
         }
+    }
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool dispose)
+    {
+        ReactiveWebView.Dispose();
+        Observable.FromAsync(_ => DataService.DeleteTabAsync(TabId)).Subscribe();
     }
 }

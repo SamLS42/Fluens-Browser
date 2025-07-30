@@ -1,5 +1,6 @@
 using ArgyllBrowse.UI.Helpers;
 using ArgyllBrowse.UI.ViewModels;
+using ArgyllBrowse.UI.ViewModels.Helpers;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -33,31 +34,28 @@ public sealed partial class AppTab : ReactiveAppTab, IDisposable
     {
         InitializeComponent();
 
+        MyWebView.Source = Constants.AboutBlankUri;
+
         ViewModel ??= ServiceLocator.GetRequiredService<AppTabViewModel>();
         ViewModel.SetReactiveWebView(new ReactiveWebView(MyWebView));
 
-        this.WhenActivated(d =>
-        {
-            this.Bind(ViewModel, vm => vm.SearchBarText, v => v.SearchBar.Text).DisposeWith(d);
-            this.OneWayBind(ViewModel, vm => vm.CanStop, v => v.StopBtn.Visibility).DisposeWith(d);
-            this.OneWayBind(ViewModel, vm => vm.CanRefresh, v => v.RefreshBtn.Visibility).DisposeWith(d);
-            this.BindCommand(ViewModel, vm => vm.GoBack, v => v.GoBackBtn).DisposeWith(d);
-            this.BindCommand(ViewModel, vm => vm.GoForward, v => v.GoForwardBtn).DisposeWith(d);
-            this.BindCommand(ViewModel, vm => vm.Refresh, v => v.RefreshBtn).DisposeWith(d);
-            this.BindCommand(ViewModel, vm => vm.Stop, v => v.StopBtn).DisposeWith(d);
+        this.Bind(ViewModel, vm => vm.SearchBarText, v => v.SearchBar.Text).DisposeWith(Disposables);
+        this.OneWayBind(ViewModel, vm => vm.CanStop, v => v.StopBtn.Visibility).DisposeWith(Disposables);
+        this.OneWayBind(ViewModel, vm => vm.CanRefresh, v => v.RefreshBtn.Visibility).DisposeWith(Disposables);
+        this.BindCommand(ViewModel, vm => vm.GoBack, v => v.GoBackBtn).DisposeWith(Disposables);
+        this.BindCommand(ViewModel, vm => vm.GoForward, v => v.GoForwardBtn).DisposeWith(Disposables);
+        this.BindCommand(ViewModel, vm => vm.Refresh, v => v.RefreshBtn).DisposeWith(Disposables);
+        this.BindCommand(ViewModel, vm => vm.Stop, v => v.StopBtn).DisposeWith(Disposables);
 
-            Observable.FromEventPattern<KeyRoutedEventArgs>(SearchBar, nameof(SearchBar.KeyDown))
-                .Subscribe(ep => DetectEnterKey(ep.EventArgs)).DisposeWith(d);
-        });
-
-        this.Bind(ViewModel, vm => vm.Url, v => v.MyWebView.Source).DisposeWith(Disposables);
+        Observable.FromEventPattern<KeyRoutedEventArgs>(SearchBar, nameof(SearchBar.KeyDown))
+            .Subscribe(ep => DetectEnterKey(ep.EventArgs)).DisposeWith(Disposables);
     }
 
     private void DetectEnterKey(KeyRoutedEventArgs eventArgs)
     {
         if (eventArgs.Key == Windows.System.VirtualKey.Enter)
         {
-            ViewModel?.NavigateToUrl.Execute().Subscribe();
+            ViewModel?.NavigateToSeachBarInput.Execute().Subscribe();
         }
     }
 

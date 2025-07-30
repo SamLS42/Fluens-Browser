@@ -174,7 +174,7 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable
 
         foreach (BrowserTab item in tabs)
         {
-            tabView.AddNewAppTab(new Uri(item.Url), isSelected: item.IsTabSelected);
+            tabView.AddNewAppTab(item.Url, isSelected: item.IsTabSelected);
             Observable.FromAsync(async _ => await ViewModel!.DeleteTabAsync(item.Id)).Subscribe();
         }
     }
