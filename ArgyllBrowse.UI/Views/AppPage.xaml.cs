@@ -6,8 +6,6 @@ using ArgyllBrowse.UI.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Media.Imaging;
 using ReactiveUI;
 using System;
 using System.Linq;
@@ -15,7 +13,6 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Windows.Foundation.Collections;
-using Windows.Media.Playback;
 using WinRT;
 
 namespace ArgyllBrowse.UI.Views;
@@ -33,54 +30,68 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable
         ViewModel ??= ServiceLocator.GetRequiredService<AppPageViewModel>();
 
         Observable.FromEventPattern<RoutedEventArgs>(this, nameof(Loaded))
-            .Subscribe(_ => SetTitleBar())
+            .Subscribe(_ => SetTitleBar());
+
+        Observable.FromEventPattern<TabView, object>(tabView, nameof(tabView.AddTabButtonClick))
+            .Subscribe(_ => tabView.AddNewAppTab());
+
+        Observable.FromEventPattern<SelectionChangedEventArgs>(tabView, nameof(tabView.SelectionChanged))
+            .Subscribe(ep =>
+            {
+                ep.EventArgs.RemovedItems.FirstOrDefault()?.As<TabViewItem>().Content.As<AppTab>().ViewModel?.IsTabSelected = false;
+                ep.EventArgs.AddedItems.FirstOrDefault()?.As<TabViewItem>().Content.As<AppTab>().ViewModel?.IsTabSelected = true;
+            });
+
+        Observable.FromEventPattern<SelectionChangedEventArgs>(tabView, nameof(tabView.SelectionChanged))
+            .Select(ep => ep.EventArgs.AddedItems.SingleOrDefault())
+            .WhereNotNull()
+            .SelectMany(vm => vm.As<TabViewItem>().Content.As<AppTab>().ViewModel!.OpenConfig)
+            .Subscribe(_ => SettingsDialog.IsOpen = !SettingsDialog.IsOpen)
             .DisposeWith(disposables);
 
-        this.WhenActivated(d =>
-        {
-            Observable.FromEventPattern<TabView, object>(tabView, nameof(tabView.AddTabButtonClick))
-                .Subscribe(_ => tabView.AddNewAppTab()).DisposeWith(d);
+        Observable.FromEventPattern<TabView, TabViewTabCloseRequestedEventArgs>(tabView, nameof(tabView.TabCloseRequested))
+            .Subscribe(ep => CloseTab(ep.EventArgs));
 
-            Observable.FromEventPattern<SelectionChangedEventArgs>(tabView, nameof(tabView.SelectionChanged))
-                .Subscribe(ep =>
-                {
-                    ep.EventArgs.RemovedItems.FirstOrDefault()?.As<TabViewItem>().Content.As<ReactiveAppTab>().ViewModel?.IsTabSelected = false;
-                    ep.EventArgs.AddedItems.FirstOrDefault()?.As<TabViewItem>().Content.As<ReactiveAppTab>().ViewModel?.IsTabSelected = true;
-                }).DisposeWith(d);
+        Observable.FromEventPattern<TabView, IVectorChangedEventArgs>(tabView, nameof(tabView.TabItemsChanged))
+            .SkipWhile(_ => isLoaded is false)
+            .Throttle(TimeSpan.FromSeconds(1), RxApp.MainThreadScheduler)
+            .Subscribe(ep => UpdateTabIndexes());
 
-            Observable.FromEventPattern<TabView, TabViewTabCloseRequestedEventArgs>(tabView, nameof(tabView.TabCloseRequested))
-                .Subscribe(ep => CloseTab(ep.EventArgs)).DisposeWith(d);
-
-            Observable.FromEventPattern<TabView, IVectorChangedEventArgs>(tabView, nameof(tabView.TabItemsChanged))
-                .SkipWhile(_ => isLoaded is false)
-                .Throttle(TimeSpan.FromSeconds(1))
-                .ObserveOn(RxApp.MainThreadScheduler)
-                .SubscribeOn(RxApp.MainThreadScheduler)
-                .Subscribe(ep => UpdateTabIndexes()).DisposeWith(d);
-        });
+        Observable.FromEventPattern<SizeChangedEventArgs>(tabView, nameof(tabView.SizeChanged))
+            .Subscribe(ep =>
+            {
+                SettingsDialogContent.Width = tabView.ActualWidth - (2 * SettingsDialogContent.Margin.Left);
+                SettingsDialogContent.Height = tabView.ActualHeight - (2 * SettingsDialogContent.Margin.Top);
+            });
     }
+
+    private AppTab SelectedTab => tabView.SelectedItem.As<TabViewItem>().Content.As<AppTab>();
 
     private void SetTitleBar()
     {
-        AppWindow currentWindow = WindowsManager.GetWindowForElement(this)!;
+        MainWindow currentWindow = WindowsManager.GetWindowForElement(this)!;
         currentWindow.SetTitleBar(CustomDragRegion);
         CustomDragRegion.MinWidth = 188;
     }
 
     private void CloseTab(TabViewTabCloseRequestedEventArgs eventArgs)
     {
-        if (eventArgs.Tab.Content is AppTab tab)
+        RemoveTab(eventArgs.Tab);
+    }
+
+    private void RemoveTab(TabViewItem tabViewItem)
+    {
+        AppTab tab = tabViewItem.Content.As<AppTab>();
+
+        tabView.TabItems.Remove(tabViewItem);
+
+        if (tabView.TabItems.Count == 0)
         {
-            tabView.TabItems.Remove(eventArgs.Tab);
-
-            if (tabView.TabItems.Count == 0)
-            {
-                Window? window = WindowsManager.GetWindowForElement(this);
-                window?.Close();
-            }
-
-            tab.Dispose();
+            Window? window = WindowsManager.GetWindowForElement(this);
+            window?.Close();
         }
+
+        tab.Dispose();
     }
 
     private void NewTabKeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
@@ -95,18 +106,9 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable
         TabViewItem tab = (TabViewItem)tabView.SelectedItem;
         if (tab is not null)
         {
-            CloseSelectedTab(tabView, tab);
+            RemoveTab(tab);
         }
         args.Handled = true;
-    }
-
-    private void CloseSelectedTab(TabView tabView, TabViewItem tab)
-    {
-        // Only remove the selected tab if it can be closed.
-        if (tab.IsClosable == true)
-        {
-            tabView.TabItems.Remove(tab);
-        }
     }
 
     private void NavigateToNumberedTabKeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
@@ -163,11 +165,6 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable
         }
     }
 
-    public void Dispose()
-    {
-        disposables.Dispose();
-    }
-
     private async Task RestoreOpenTabs()
     {
         BrowserTab[] tabs = await ViewModel!.GetOpenTabsAsync();
@@ -192,9 +189,12 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable
                     case OnStartupSetting.RestoreOpenTabs:
                         await RestoreOpenTabs();
                         break;
-                    case OnStartupSetting.OpenSpecificTabs:
-                        break;
+                    //TODO
+                    //case OnStartupSetting.OpenSpecificTabs:
+                    //    break;
                     case OnStartupSetting.RestoreAndOpenNewTab:
+                        await RestoreOpenTabs();
+                        tabView.AddNewAppTab();
                         break;
                     default:
                         tabView.AddNewAppTab();
@@ -211,7 +211,18 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable
                 UpdateTabIndexes();
                 isLoaded = true;
 
-            }).DisposeWith(disposables);
+            });
+    }
+
+    public void Dispose()
+    {
+        disposables.Dispose();
+    }
+
+    private void RefreshbKeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        SelectedTab.ViewModel!.Refresh.Execute().Subscribe();
+        args.Handled = true;
     }
 }
 

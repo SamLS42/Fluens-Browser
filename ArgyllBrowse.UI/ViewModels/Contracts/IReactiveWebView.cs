@@ -10,7 +10,7 @@ public interface IReactiveWebView : IDisposable
     Subject<Unit> NavigationCompleted { get; }
     Subject<Unit> NavigationStarting { get; }
     BehaviorSubject<bool> IsLoading { get; }
-    Subject<Uri> Url { get; }
+    BehaviorSubject<Uri> Url { get; }
     void GoBack();
     void GoForward();
     void StopNavigation();

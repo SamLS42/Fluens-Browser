@@ -4,11 +4,14 @@ using ArgyllBrowse.UI.Enums;
 using ArgyllBrowse.UI.Helpers;
 using ArgyllBrowse.UI.Services;
 using ArgyllBrowse.UI.ViewModels;
+using ArgyllBrowse.UI.ViewModels.Contracts;
+using ArgyllBrowse.UI.ViewModels.Settings.OnStartup;
 using ArgyllBrowse.UI.Views;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -23,18 +26,20 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reactive.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Storage;
+using WinRT;
 
 namespace ArgyllBrowse.UI;
 
 public partial class App : Application
 {
-    private AppWindow _window = null!;
+    private MainWindow _window = null!;
 
     public App()
     {
@@ -50,8 +55,10 @@ public partial class App : Application
         IServiceCollection serviceCollection = new ServiceCollection()
             .AddTransient<AppPageViewModel>()
             .AddTransient<AppTabViewModel>()
+            .AddSingleton<OnStartupConfigViewModel>()
             .AddSingleton<WindowsManager>()
             .AddSingleton<BrowserDataService>()
+            .AddSingleton<ILocalSettingService, LocalSettingService>()
             .AddPooledDbContextFactory<BrowserDbContext>(opts =>
             {
                 opts.UseSqlite("Data Source=BrowserStorage.db");
@@ -61,6 +68,7 @@ public partial class App : Application
 
 
     }
+
     protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
     {
         IDbContextFactory<BrowserDbContext> dbContextFactory = ServiceLocator.GetRequiredService<IDbContextFactory<BrowserDbContext>>();
@@ -70,8 +78,15 @@ public partial class App : Application
 
         _window = ServiceLocator.GetRequiredService<WindowsManager>().CreateWindow();
 
-        _window.ApplyOnStartupSetting();
+        _window.AppWindow.Presenter.As<OverlappedPresenter>().Maximize();
 
-        _window.Activate();
+        ILocalSettingService localSetting = ServiceLocator.GetRequiredService<ILocalSettingService>();
+
+        localSetting.OnStartupSettingChanges.Take(1)
+            .Subscribe(onStartupSetting =>
+            {
+                _window.ApplyOnStartupSetting(onStartupSetting);
+                _window.Activate();
+            });
     }
 }

@@ -1,5 +1,6 @@
 ﻿using ArgyllBrowse.UI.ViewModels.Helpers;
 using ArgyllBrowse.UI.Views;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
 using ReactiveUI;
@@ -40,7 +41,7 @@ internal static class TabViewExtensions
 
         SubscribeToTabChanges(appTab, appTabDisposable, newTab);
 
-        if (uri == null)
+        if (uri == null || uri == Constants.AboutBlankUri.ToString())
         {
             return;
         }

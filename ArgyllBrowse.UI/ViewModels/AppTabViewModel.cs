@@ -4,6 +4,7 @@ using ArgyllBrowse.UI.ViewModels.Helpers;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reactive;
 using System.Reactive.Disposables;
@@ -21,7 +22,7 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
     public IObservable<Unit> NavigationStarting => ReactiveWebView.NavigationStarting.AsObservable();
     public IObservable<Unit> NavigationCompleted => ReactiveWebView.NavigationCompleted.AsObservable();
 
-    private int TabId { get; set; }
+    private int? TabId { get; set; }
 
     [Reactive]
     public partial bool CanStop { get; set; }
@@ -36,7 +37,7 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
     public partial bool IsTabSelected { get; set; }
 
     [Reactive]
-    private partial Uri Url { get; set; } = Constants.AboutBlankUri;
+    private partial Uri Url { get; set; } = null!;
 
     [Reactive]
     public partial string SearchBarText { get; set; } = string.Empty;
@@ -46,17 +47,17 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
     public ReactiveCommand<Unit, Unit> GoBack { get; private set; } = null!;
     public ReactiveCommand<Unit, Unit> GoForward { get; private set; } = null!;
     public ReactiveCommand<Unit, Unit> Stop { get; private set; } = null!;
+    public ReactiveCommand<Unit, Unit> OpenConfig { get; private set; } = null!;
 
     private BrowserDataService DataService { get; }
 
-    public AppTabViewModel(BrowserDataService browserDataService)
+    public AppTabViewModel(BrowserDataService dataService)
     {
-        ArgumentNullException.ThrowIfNull(browserDataService);
-        DataService = browserDataService;
+        ArgumentNullException.ThrowIfNull(dataService);
+        DataService = dataService;
 
         NavigateToSeachBarInput = ReactiveCommand.Create(NavigateToSeachBarInputImpl);
-
-        TabId = browserDataService.CreateTab(Url);
+        OpenConfig = ReactiveCommand.Create(() => { });
 
         this.WhenAnyValue(x => x.Index)
             .WhereNotNull()
@@ -67,10 +68,11 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
             .Merge(this.WhenAnyValue(x => x.IsTabSelected)
                 .SkipWhile(_ => Index is null)
                 .Select(_ => Unit.Default))
-            .Throttle(TimeSpan.FromSeconds(1))
+            .Throttle(TimeSpan.FromMilliseconds(200))
             .Subscribe(async _ => await SaveTabStateAsync());
 
         this.WhenAnyValue(x => x.Url)
+            .WhereNotNull()
             .Subscribe(url => UpdateSearchBar());
     }
 
@@ -90,7 +92,8 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
 
     private async Task SaveTabStateAsync()
     {
-        await DataService.SaveTabStateAsync(TabId, Index!.Value, Url, IsTabSelected);
+        TabId ??= DataService.CreateTab(Url);
+        await DataService.SaveTabStateAsync(TabId.Value, Index!.Value, Url, IsTabSelected);
     }
 
     private void NavigateToSeachBarInputImpl()
@@ -134,6 +137,10 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
     protected virtual void Dispose(bool dispose)
     {
         ReactiveWebView.Dispose();
-        Observable.FromAsync(_ => DataService.DeleteTabAsync(TabId)).Subscribe();
+
+        if (TabId != null)
+        {
+            Observable.FromAsync(_ => DataService.DeleteTabAsync(TabId.Value)).Subscribe();
+        }
     }
 }

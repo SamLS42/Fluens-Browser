@@ -2,27 +2,13 @@ using ArgyllBrowse.UI.Helpers;
 using ArgyllBrowse.UI.ViewModels;
 using ArgyllBrowse.UI.ViewModels.Helpers;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
-using Microsoft.Web.WebView2.Core;
 using ReactiveUI;
-
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Reactive;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
-using System.Reactive.Subjects;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
-using Windows.UI.WebUI;
+using Windows.System;
 
 namespace ArgyllBrowse.UI.Views;
 public partial class ReactiveAppTab : ReactiveUserControl<AppTabViewModel>;
@@ -46,28 +32,41 @@ public sealed partial class AppTab : ReactiveAppTab, IDisposable
         this.BindCommand(ViewModel, vm => vm.GoForward, v => v.GoForwardBtn).DisposeWith(Disposables);
         this.BindCommand(ViewModel, vm => vm.Refresh, v => v.RefreshBtn).DisposeWith(Disposables);
         this.BindCommand(ViewModel, vm => vm.Stop, v => v.StopBtn).DisposeWith(Disposables);
+        this.BindCommand(ViewModel, vm => vm.OpenConfig, v => v.ConfigBtn).DisposeWith(Disposables);
 
         Observable.FromEventPattern<KeyRoutedEventArgs>(SearchBar, nameof(SearchBar.KeyDown))
-            .Subscribe(ep => DetectEnterKey(ep.EventArgs)).DisposeWith(Disposables);
+            .Subscribe(ep => DetectEnterKey(ep.EventArgs.Key));
+
+        Observable.FromEventPattern<RoutedEventArgs>(SearchBar, nameof(SearchBar.GotFocus))
+            .Subscribe(_ => SearchBar.SelectAll());
+
+
+        this.WhenActivated(d =>
+        {
+            if (MyWebView.Source == Constants.AboutBlankUri)
+            {
+                SearchBar.Focus(FocusState.Programmatic);
+            }
+        });
     }
 
-    private void DetectEnterKey(KeyRoutedEventArgs eventArgs)
+    private void DetectEnterKey(VirtualKey key)
     {
-        if (eventArgs.Key == Windows.System.VirtualKey.Enter)
+        if (key == VirtualKey.Enter)
         {
             ViewModel?.NavigateToSeachBarInput.Execute().Subscribe();
         }
-    }
-
-    public void Dispose()
-    {
-        Disposables.Dispose();
-        ViewModel?.Dispose();
     }
 
     private void OpenDevToolsWindow_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
         Observable.FromAsync(() => MyWebView.EnsureCoreWebView2Async().AsTask())
             .Subscribe(_ => MyWebView.CoreWebView2.OpenDevToolsWindow());
+    }
+
+    public void Dispose()
+    {
+        Disposables.Dispose();
+        ViewModel?.Dispose();
     }
 }

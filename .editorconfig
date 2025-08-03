@@ -1,7 +1,7 @@
 ﻿[*.cs]
 
 # IDE0058: Expression value is never used
-dotnet_diagnostic.IDE0058.severity = silent
+dotnet_diagnostic.IDE0058.severity = none
 csharp_indent_labels = one_less_than_current
 csharp_using_directive_placement = outside_namespace:silent
 csharp_prefer_simple_using_statement = true:suggestion
@@ -20,6 +20,7 @@ csharp_style_expression_bodied_accessors = true:silent
 csharp_style_expression_bodied_lambdas = true:silent
 csharp_style_expression_bodied_local_functions = false:silent
 dotnet_diagnostic.CA1515.severity = suggestion
+dotnet_diagnostic.CA1812.severity = suggestion
 
 [*.{cs,vb}]
 #### Naming styles ####
@@ -85,5 +86,7 @@ dotnet_style_explicit_tuple_names = true:suggestion
 dotnet_style_prefer_inferred_tuple_names = true:suggestion
 dotnet_style_prefer_inferred_anonymous_type_member_names = true:suggestion
 dotnet_diagnostic.CA2007.severity = none
+dotnet_diagnostic.CA1062.severity = none
 dotnet_diagnostic.CA1056.severity = none
 dotnet_diagnostic.CA1822.severity = silent
+dotnet_diagnostic.CA1852.severity = none

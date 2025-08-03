@@ -64,4 +64,11 @@ public class BrowserDataService(IDbContextFactory<BrowserDbContext> dbContextFac
 
         await dbContext.OpenTabs.Where(t => t.Id == id).ExecuteDeleteAsync();
     }
+
+    public async Task ClearOpenTabsAsync()
+    {
+        await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync();
+
+        await dbContext.OpenTabs.ExecuteDeleteAsync();
+    }
 }

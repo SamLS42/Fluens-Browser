@@ -15,7 +15,10 @@
 	</PropertyGroup>
 	<ItemGroup>
 		<None Remove="Views\AppPage.xaml" />
-		<None Remove="Views\BlankPage.xaml" />
+		<None Remove="Views\SettingsView.xaml" />
+		<None Remove="Views\Settings\Everything.xaml" />
+		<None Remove="Views\Settings\History.xaml" />
+		<None Remove="Views\Settings\History\HistoryEntryView.xaml" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -41,6 +44,7 @@
 		<ProjectCapability Include="Msix" />
 	</ItemGroup>
 	<ItemGroup>
+		<PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.2.250402" />
 		<PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.4654" />
 		<PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250606001" />
 		<PackageReference Include="ReactiveUI.SourceGenerators" Version="2.3.1">
@@ -50,11 +54,6 @@
 		<PackageReference Include="ReactiveUI.WinUI" Version="20.4.1" />
 	</ItemGroup>
 	<ItemGroup>
-	  <Page Update="Views\BlankPage.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </Page>
-	</ItemGroup>
-	<ItemGroup>
 		<Page Update="Views\AppPage.xaml">
 			<Generator>MSBuild:Compile</Generator>
 		</Page>
@@ -62,6 +61,31 @@
 	<ItemGroup>
 	  <ProjectReference Include="..\ArgyllBrowse.Data\ArgyllBrowse.Data.csproj" />
 	  <ProjectReference Include="..\ArgyllBrowse.Services\ArgyllBrowse.Services.csproj" />
+	</ItemGroup>
+	<ItemGroup>
+	  <Page Update="Views\Settings\Everything.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </Page>
+	</ItemGroup>
+	<ItemGroup>
+	  <Page Update="Views\SettingsView.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </Page>
+	</ItemGroup>
+	<ItemGroup>
+	  <Page Update="Views\Settings\History.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </Page>
+	</ItemGroup>
+	<ItemGroup>
+	  <Page Update="Views\Settings\History\HistoryEntryView.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </Page>
+	</ItemGroup>
+	<ItemGroup>
+	  <Page Update="Views\Settings\OnStartup\OnStartupConfig.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </Page>
 	</ItemGroup>
 
 	<!--

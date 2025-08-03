@@ -1,4 +1,5 @@
 ﻿using ArgyllBrowse.UI.ViewModels.Contracts;
+using ArgyllBrowse.UI.ViewModels.Helpers;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.Web.WebView2.Core;
 using System;
@@ -18,13 +19,13 @@ internal sealed partial class ReactiveWebView : IReactiveWebView
     public BehaviorSubject<string> FaviconUrlChanges { get; } = new(string.Empty);
     public Subject<Unit> NavigationStarting { get; } = new();
     public Subject<Unit> NavigationCompleted { get; } = new();
-    public Subject<Uri> Url { get; } = new();
+    public BehaviorSubject<Uri> Url { get; } = new(Constants.AboutBlankUri);
 
     public ReactiveWebView(WebView2 webView)
     {
         MyWebView = webView;
 
-        Observable.FromEventPattern(MyWebView, nameof(MyWebView.CoreWebView2Initialized)).Subscribe(_ =>
+        Observable.FromEventPattern<WebView2, CoreWebView2InitializedEventArgs>(MyWebView, nameof(MyWebView.CoreWebView2Initialized)).Subscribe(ep =>
         {
             Observable.FromEventPattern(MyWebView.CoreWebView2, nameof(MyWebView.CoreWebView2.NavigationStarting))
                 .Select(_ => true)
