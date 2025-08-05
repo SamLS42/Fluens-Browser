@@ -18,7 +18,7 @@ internal static class TabViewExtensions
     private static readonly FontIconSource loadingPageIcon = new() { Glyph = "\uF16A" };
     private static readonly FontIconSource blankPageIcon = new() { Glyph = "\uE909" };
 
-    internal static void AddNewAppTab(this TabView tabView, string? uri = null, bool isSelected = true)
+    internal static void AddAppTab(this TabView tabView, string? uri = null, string? faviconUrl = null, string? documentTitle = null, bool isSelected = true)
     {
         ArgumentNullException.ThrowIfNull(tabView);
 
@@ -27,8 +27,8 @@ internal static class TabViewExtensions
 
         TabViewItem newTab = new()
         {
-            Header = "New Tab",
-            IconSource = blankPageIcon,
+            Header = GetCorrectTitle(documentTitle),
+            IconSource = GetTabIconSource(faviconUrl),
             Content = appTab
         };
 
@@ -47,20 +47,26 @@ internal static class TabViewExtensions
         }
 
         appTab.ViewModel?.SearchBarText = uri;
-        appTab.ViewModel?.NavigateToSeachBarInput.Execute().Subscribe();
     }
 
     private static void SubscribeToTabChanges(AppTab appTab, CompositeDisposable appTabDisposable, TabViewItem newTab)
     {
-        appTab.ViewModel?.DocumentTitleChanges
-            .Subscribe(title => newTab.Header = title.Equals(Constants.AboutBlankUri.ToString(), StringComparison.Ordinal) ? "New Tab" : title);
+        appTab.ViewModel?.DocumentTitleChanges.Skip(1)
+            .Subscribe(title => newTab.Header = GetCorrectTitle(title));
 
         appTab.ViewModel?.NavigationStarting.Skip(1)
             .Subscribe(_ => newTab.IconSource = loadingPageIcon);
 
         appTab.ViewModel?.NavigationCompleted
-            .SelectMany(_ => appTab.ViewModel!.FaviconUrl.DelaySubscription(TimeSpan.FromMilliseconds(100)).ObserveOn(RxApp.MainThreadScheduler).Take(1))
+            .SelectMany(_ => appTab.ViewModel!.FaviconUrl.Skip(1).DelaySubscription(TimeSpan.FromMilliseconds(100)).ObserveOn(RxApp.MainThreadScheduler).Take(1))
             .Subscribe(faviconUrl => newTab.IconSource = GetTabIconSource(faviconUrl));
+    }
+
+    private static string GetCorrectTitle(string? title)
+    {
+        return string.IsNullOrWhiteSpace(title) || title.Equals(Constants.AboutBlankUri.ToString(), StringComparison.Ordinal)
+            ? "New Tab"
+            : title;
     }
 
     private static IconSource GetTabIconSource(string? faviconUrl)

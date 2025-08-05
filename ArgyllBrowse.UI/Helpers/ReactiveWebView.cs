@@ -15,7 +15,7 @@ internal sealed partial class ReactiveWebView : IReactiveWebView
     private readonly CompositeDisposable Disposables = [];
     private WebView2 MyWebView { get; } = null!;
     public BehaviorSubject<bool> IsLoading { get; } = new(false);
-    public Subject<string> DocumentTitleChanges { get; } = new();
+    public BehaviorSubject<string> DocumentTitleChanges { get; } = new(string.Empty);
     public BehaviorSubject<string> FaviconUrlChanges { get; } = new(string.Empty);
     public Subject<Unit> NavigationStarting { get; } = new();
     public Subject<Unit> NavigationCompleted { get; } = new();

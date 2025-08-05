@@ -93,7 +93,7 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
     private async Task SaveTabStateAsync()
     {
         TabId ??= DataService.CreateTab(Url);
-        await DataService.SaveTabStateAsync(TabId.Value, Index!.Value, Url, IsTabSelected);
+        await DataService.SaveTabStateAsync(TabId.Value, Index!.Value, Url, IsTabSelected, ReactiveWebView.FaviconUrlChanges.Value, ReactiveWebView.DocumentTitleChanges.Value);
     }
 
     private void NavigateToSeachBarInputImpl()

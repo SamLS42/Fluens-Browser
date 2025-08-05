@@ -45,7 +45,7 @@ public class BrowserDataService(IDbContextFactory<BrowserDbContext> dbContextFac
         return entity.Id;
     }
 
-    public async Task SaveTabStateAsync(int id, int index, Uri url, bool isTabSelected)
+    public async Task SaveTabStateAsync(int id, int index, Uri url, bool isTabSelected, string faviconUrl, string documentTitle)
     {
         await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync();
 
@@ -55,6 +55,8 @@ public class BrowserDataService(IDbContextFactory<BrowserDbContext> dbContextFac
                 .SetProperty(t => t.Index, index)
                 .SetProperty(t => t.Url, url.ToString())
                 .SetProperty(t => t.IsTabSelected, isTabSelected)
+                .SetProperty(t => t.FaviconUrl, faviconUrl)
+                .SetProperty(t => t.DocumentTitle, documentTitle)
                 );
     }
 

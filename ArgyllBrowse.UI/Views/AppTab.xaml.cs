@@ -41,9 +41,14 @@ public sealed partial class AppTab : ReactiveAppTab, IDisposable
             .Subscribe(_ => SearchBar.SelectAll());
 
 
-        this.WhenActivated(d =>
+        this.WhenActivated(async d =>
         {
-            if (MyWebView.Source == Constants.AboutBlankUri)
+            if (MyWebView.Source == Constants.AboutBlankUri && !string.IsNullOrWhiteSpace(SearchBar.Text))
+            {
+                await MyWebView.EnsureCoreWebView2Async();
+                ViewModel?.NavigateToSeachBarInput.Execute().Subscribe();
+            }
+            else if (MyWebView.Source == Constants.AboutBlankUri)
             {
                 SearchBar.Focus(FocusState.Programmatic);
             }

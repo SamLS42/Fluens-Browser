@@ -5,7 +5,7 @@ using System.Reactive.Subjects;
 namespace ArgyllBrowse.UI.ViewModels.Contracts;
 public interface IReactiveWebView : IDisposable
 {
-    Subject<string> DocumentTitleChanges { get; }
+    BehaviorSubject<string> DocumentTitleChanges { get; }
     BehaviorSubject<string> FaviconUrlChanges { get; }
     Subject<Unit> NavigationCompleted { get; }
     Subject<Unit> NavigationStarting { get; }

@@ -90,3 +90,4 @@ dotnet_diagnostic.CA1062.severity = none
 dotnet_diagnostic.CA1056.severity = none
 dotnet_diagnostic.CA1822.severity = silent
 dotnet_diagnostic.CA1852.severity = none
+dotnet_diagnostic.CA1054.severity = suggestion
