@@ -15,15 +15,19 @@ internal sealed partial class ReactiveWebView : IReactiveWebView
     private readonly CompositeDisposable Disposables = [];
     private WebView2 MyWebView { get; } = null!;
     public BehaviorSubject<bool> IsLoading { get; } = new(false);
-    public BehaviorSubject<string> DocumentTitleChanges { get; } = new(string.Empty);
-    public BehaviorSubject<string> FaviconUrlChanges { get; } = new(string.Empty);
+    public BehaviorSubject<string> DocumentTitle { get; }
+    public BehaviorSubject<string> FaviconUrl { get; private set; }
     public Subject<Unit> NavigationStarting { get; } = new();
     public Subject<Unit> NavigationCompleted { get; } = new();
-    public BehaviorSubject<Uri> Url { get; } = new(Constants.AboutBlankUri);
+    public BehaviorSubject<Uri> Url { get; }
 
-    public ReactiveWebView(WebView2 webView)
+    public ReactiveWebView(WebView2 webView, string? documentTitle = null, string? faviconUrl = null, Uri? url = null)
     {
         MyWebView = webView;
+
+        DocumentTitle = new(documentTitle ?? string.Empty);
+        FaviconUrl = new(faviconUrl ?? string.Empty);
+        Url = new(url ?? Constants.AboutBlankUri);
 
         Observable.FromEventPattern<WebView2, CoreWebView2InitializedEventArgs>(MyWebView, nameof(MyWebView.CoreWebView2Initialized)).Subscribe(ep =>
         {
@@ -35,20 +39,22 @@ internal sealed partial class ReactiveWebView : IReactiveWebView
 
             Observable.FromEventPattern(MyWebView.CoreWebView2, nameof(MyWebView.CoreWebView2.DocumentTitleChanged))
                 .Select(_ => MyWebView.CoreWebView2.DocumentTitle)
-                .Subscribe(DocumentTitleChanges.OnNext)
-                .DisposeWith(Disposables);
-
-            Observable.FromEventPattern(MyWebView.CoreWebView2, nameof(MyWebView.CoreWebView2.FaviconChanged))
-                .Select(_ => MyWebView.CoreWebView2.FaviconUri)
-                .Subscribe(FaviconUrlChanges.OnNext)
+                .Subscribe(DocumentTitle.OnNext)
                 .DisposeWith(Disposables);
 
             Observable.FromEventPattern(MyWebView.CoreWebView2, nameof(MyWebView.CoreWebView2.NavigationStarting))
                 .Subscribe(_ => NavigationStarting.OnNext(Unit.Default))
                 .DisposeWith(Disposables);
 
+            Observable.FromEventPattern(MyWebView.CoreWebView2, nameof(MyWebView.CoreWebView2.FaviconChanged))
+                .Subscribe(_ => FaviconUrl.OnNext(MyWebView.CoreWebView2.FaviconUri))
+                .DisposeWith(Disposables);
+
             Observable.FromEventPattern(MyWebView.CoreWebView2, nameof(MyWebView.CoreWebView2.NavigationCompleted))
-                .Subscribe(_ => NavigationCompleted.OnNext(Unit.Default))
+                .Subscribe(_ =>
+                {
+                    NavigationCompleted.OnNext(Unit.Default);
+                })
                 .DisposeWith(Disposables);
 
             Observable.FromEventPattern<CoreWebView2, CoreWebView2SourceChangedEventArgs>(MyWebView.CoreWebView2, nameof(MyWebView.CoreWebView2.SourceChanged))
@@ -82,12 +88,12 @@ internal sealed partial class ReactiveWebView : IReactiveWebView
     public void Dispose()
     {
         IsLoading.OnCompleted();
-        DocumentTitleChanges.OnCompleted();
-        FaviconUrlChanges.OnCompleted();
+        DocumentTitle.OnCompleted();
         NavigationStarting.OnCompleted();
         NavigationCompleted.OnCompleted();
         Url.OnCompleted();
         Disposables.Dispose();
+        MyWebView.Close();
     }
 
     public void NavigateToUrl(Uri url)

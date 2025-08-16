@@ -78,7 +78,8 @@ public partial class App : Application
 
         _window = ServiceLocator.GetRequiredService<WindowsManager>().CreateWindow();
 
-        _window.AppWindow.Presenter.As<OverlappedPresenter>().Maximize();
+        //TODO: Save and recover window state (maximized, size, etc.)
+        //_window.AppWindow.Presenter.As<OverlappedPresenter>().Maximize();
 
         ILocalSettingService localSetting = ServiceLocator.GetRequiredService<ILocalSettingService>();
 

@@ -34,8 +34,6 @@ public class BrowserDataService(IDbContextFactory<BrowserDbContext> dbContextFac
     {
         using BrowserDbContext dbContext = dbContextFactory.CreateDbContext();
 
-        ArgumentNullException.ThrowIfNull(url);
-
         BrowserTab entity = new() { Url = url.ToString() };
 
         dbContext.OpenTabs.Add(entity);
@@ -45,19 +43,49 @@ public class BrowserDataService(IDbContextFactory<BrowserDbContext> dbContextFac
         return entity.Id;
     }
 
-    public async Task SaveTabStateAsync(int id, int index, Uri url, bool isTabSelected, string faviconUrl, string documentTitle)
+    public async Task SetTabIndexAsync(int id, int index)
     {
         await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync();
 
         await dbContext.OpenTabs
             .Where(t => t.Id == id)
-            .ExecuteUpdateAsync(u => u
-                .SetProperty(t => t.Index, index)
-                .SetProperty(t => t.Url, url.ToString())
-                .SetProperty(t => t.IsTabSelected, isTabSelected)
-                .SetProperty(t => t.FaviconUrl, faviconUrl)
-                .SetProperty(t => t.DocumentTitle, documentTitle)
-                );
+            .ExecuteUpdateAsync(u => u.SetProperty(t => t.Index, index));
+    }
+
+    public async Task SetTabUrlAsync(int id, Uri url)
+    {
+        await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync();
+
+        await dbContext.OpenTabs
+            .Where(t => t.Id == id)
+            .ExecuteUpdateAsync(u => u.SetProperty(t => t.Url, url.ToString()));
+    }
+
+    public async Task SetIsTabSelectedAsync(int id, bool isTabSelected)
+    {
+        await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync();
+
+        await dbContext.OpenTabs
+            .Where(t => t.Id == id)
+            .ExecuteUpdateAsync(u => u.SetProperty(t => t.IsTabSelected, isTabSelected));
+    }
+
+    public async Task SaveTabFaviconUrlAsync(int id, string faviconUrl)
+    {
+        await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync();
+
+        await dbContext.OpenTabs
+            .Where(t => t.Id == id)
+            .ExecuteUpdateAsync(u => u.SetProperty(t => t.FaviconUrl, faviconUrl));
+    }
+
+    public async Task SaveTabDocumentTitleAsync(int id, string documentTitle)
+    {
+        await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync();
+
+        await dbContext.OpenTabs
+            .Where(t => t.Id == id)
+            .ExecuteUpdateAsync(u => u.SetProperty(t => t.DocumentTitle, documentTitle));
     }
 
     public async Task DeleteTabAsync(int id)

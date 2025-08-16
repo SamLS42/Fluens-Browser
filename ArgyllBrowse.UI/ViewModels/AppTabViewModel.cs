@@ -1,28 +1,30 @@
 ﻿using ArgyllBrowse.Data.Services;
+using ArgyllBrowse.UI.Helpers;
 using ArgyllBrowse.UI.ViewModels.Contracts;
 using ArgyllBrowse.UI.ViewModels.Helpers;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reactive;
-using System.Reactive.Disposables;
 using System.Reactive.Linq;
-using System.Reactive.Subjects;
-using System.Security.Policy;
 using System.Threading.Tasks;
+using System.Windows.Documents;
 
 namespace ArgyllBrowse.UI.ViewModels;
 public partial class AppTabViewModel : ReactiveObject, IDisposable
 {
+    private const string httpsPrefix = "https://";
+    private const string httpPrefix = "http://";
+
     private IReactiveWebView ReactiveWebView { get; set; } = null!;
-    public IObservable<string> DocumentTitleChanges => ReactiveWebView.DocumentTitleChanges.AsObservable();
-    public IObservable<string> FaviconUrl => ReactiveWebView.FaviconUrlChanges.AsObservable();
+    public IObservable<string> DocumentTitle => ReactiveWebView.DocumentTitle.AsObservable();
+    public IObservable<string> FaviconUrl => ReactiveWebView.FaviconUrl.AsObservable();
     public IObservable<Unit> NavigationStarting => ReactiveWebView.NavigationStarting.AsObservable();
     public IObservable<Unit> NavigationCompleted => ReactiveWebView.NavigationCompleted.AsObservable();
+    public IObservable<bool> Isloading => ReactiveWebView.IsLoading.AsObservable();
 
-    private int? TabId { get; set; }
+    public int TabId { get; set; }
 
     [Reactive]
     public partial bool CanStop { get; set; }
@@ -37,7 +39,7 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
     public partial bool IsTabSelected { get; set; }
 
     [Reactive]
-    private partial Uri Url { get; set; } = null!;
+    public partial Uri Url { get; set; } = null!;
 
     [Reactive]
     public partial string SearchBarText { get; set; } = string.Empty;
@@ -49,31 +51,39 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
     public ReactiveCommand<Unit, Unit> Stop { get; private set; } = null!;
     public ReactiveCommand<Unit, Unit> OpenConfig { get; private set; } = null!;
 
-    private BrowserDataService DataService { get; }
+    private BrowserDataService DataService { get; } = ServiceLocator.GetRequiredService<BrowserDataService>();
 
-    public AppTabViewModel(BrowserDataService dataService)
+    public AppTabViewModel(int tabId = 0, int? index = null)
     {
-        ArgumentNullException.ThrowIfNull(dataService);
-        DataService = dataService;
+        Index = index;
+
+        if (tabId == 0)
+        {
+            TabId = DataService.CreateTab(Constants.AboutBlankUri);
+        }
+        else
+        {
+            TabId = tabId;
+        }
 
         NavigateToSeachBarInput = ReactiveCommand.Create(NavigateToSeachBarInputImpl);
         OpenConfig = ReactiveCommand.Create(() => { });
 
         this.WhenAnyValue(x => x.Index)
             .WhereNotNull()
-            .Select(_ => Unit.Default)
-            .Merge(this.WhenAnyValue(x => x.Url)
-                .SkipWhile(_ => Index is null)
-                .Select(_ => Unit.Default))
-            .Merge(this.WhenAnyValue(x => x.IsTabSelected)
-                .SkipWhile(_ => Index is null)
-                .Select(_ => Unit.Default))
-            .Throttle(TimeSpan.FromMilliseconds(200))
-            .Subscribe(async _ => await SaveTabStateAsync());
+            .Subscribe(async index => await DataService.SetTabIndexAsync(TabId, index!.Value));
+
+        this.WhenAnyValue(x => x.Url)
+            .WhereNotNull()
+            .Subscribe(async url => await DataService.SetTabUrlAsync(TabId, url));
+
+        this.WhenAnyValue(x => x.IsTabSelected)
+            .Subscribe(async isSelected => await DataService.SetIsTabSelectedAsync(TabId, isSelected));
 
         this.WhenAnyValue(x => x.Url)
             .WhereNotNull()
             .Subscribe(url => UpdateSearchBar());
+
     }
 
     public void SetReactiveWebView(IReactiveWebView reactiveWebView)
@@ -88,19 +98,34 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
         ReactiveWebView.IsLoading.Subscribe(SetStopRefreshVisibility);
 
         ReactiveWebView.Url.Subscribe(url => Url = url);
-    }
 
-    private async Task SaveTabStateAsync()
-    {
-        TabId ??= DataService.CreateTab(Url);
-        await DataService.SaveTabStateAsync(TabId.Value, Index!.Value, Url, IsTabSelected, ReactiveWebView.FaviconUrlChanges.Value, ReactiveWebView.DocumentTitleChanges.Value);
+        FaviconUrl
+            .Subscribe(async faviconUrl => await DataService.SaveTabFaviconUrlAsync(TabId, faviconUrl));
+
+        DocumentTitle
+            .Subscribe(async documentTitle => await DataService.SaveTabDocumentTitleAsync(TabId, documentTitle));
     }
 
     private void NavigateToSeachBarInputImpl()
     {
-        Uri url = Uri.TryCreate(SearchBarText, UriKind.Absolute, out Uri? result)
-            ? result.EnforceHttps()
-            : new Uri($"https://duckduckgo.com/?q={SearchBarText}");
+        string text = SearchBarText.Contains('.', StringComparison.OrdinalIgnoreCase)
+            && SearchBarText[0] != '.'
+            && SearchBarText[^1] != '.'
+                && (SearchBarText.StartsWith(httpsPrefix, StringComparison.OrdinalIgnoreCase)
+                    || SearchBarText.StartsWith(httpPrefix, StringComparison.OrdinalIgnoreCase))
+        ? SearchBarText
+        : httpPrefix + SearchBarText;
+
+        Uri url;
+
+        if (Uri.TryCreate(text, UriKind.Absolute, out Uri? result))
+        {
+            url = result;
+        }
+        else
+        {
+            url = new Uri($"https://duckduckgo.com/?q={SearchBarText}");
+        }
 
         ReactiveWebView?.NavigateToUrl(url);
     }
@@ -138,9 +163,6 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
     {
         ReactiveWebView.Dispose();
 
-        if (TabId != null)
-        {
-            Observable.FromAsync(_ => DataService.DeleteTabAsync(TabId.Value)).Subscribe();
-        }
+        Observable.FromAsync(_ => DataService.DeleteTabAsync(TabId)).Subscribe();
     }
 }

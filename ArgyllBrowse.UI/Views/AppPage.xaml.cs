@@ -33,7 +33,7 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable
             .Subscribe(_ => SetTitleBar());
 
         Observable.FromEventPattern<TabView, object>(tabView, nameof(tabView.AddTabButtonClick))
-            .Subscribe(_ => tabView.AddAppTab());
+            .Subscribe(_ => tabView.AddEmptyTab());
 
         Observable.FromEventPattern<SelectionChangedEventArgs>(tabView, nameof(tabView.SelectionChanged))
             .Subscribe(ep =>
@@ -96,7 +96,7 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable
 
     private void NewTabKeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
-        tabView.AddAppTab();
+        tabView.AddEmptyTab();
         args.Handled = true;
     }
 
@@ -171,8 +171,7 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable
 
         foreach (BrowserTab item in tabs)
         {
-            tabView.AddAppTab(item.Url, item.FaviconUrl, item.DocumentTitle, isSelected: item.IsTabSelected);
-            Observable.FromAsync(async _ => await ViewModel!.DeleteTabAsync(item.Id)).Subscribe();
+            tabView.AddAppTab(item);
         }
     }
 
@@ -184,7 +183,7 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable
                 switch (onStartupSetting)
                 {
                     case OnStartupSetting.OpenNewTab:
-                        tabView.AddAppTab();
+                        tabView.AddEmptyTab();
                         break;
                     case OnStartupSetting.RestoreOpenTabs:
                         await RestoreOpenTabs();
@@ -194,21 +193,20 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable
                     //    break;
                     case OnStartupSetting.RestoreAndOpenNewTab:
                         await RestoreOpenTabs();
-                        tabView.AddAppTab();
+                        tabView.AddEmptyTab();
                         break;
                     default:
-                        tabView.AddAppTab();
+                        tabView.AddEmptyTab();
                         break;
                 }
 
                 if (tabView.TabItems.Count == 0)
                 {
-                    tabView.AddAppTab();
+                    tabView.AddEmptyTab();
                 }
 
                 tabView.SelectedItem ??= tabView.TabItems.First();
 
-                UpdateTabIndexes();
                 isLoaded = true;
 
             });

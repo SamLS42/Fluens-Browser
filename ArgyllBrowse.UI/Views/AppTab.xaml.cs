@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Input;
 using ReactiveUI;
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
@@ -16,14 +17,15 @@ public sealed partial class AppTab : ReactiveAppTab, IDisposable
 {
     private readonly CompositeDisposable Disposables = [];
 
-    public AppTab()
+    public AppTab(int tabId = 0, int? index = null, string? documentTitle = null, string? faviconUrl = null, Uri? url = null)
     {
         InitializeComponent();
 
         MyWebView.Source = Constants.AboutBlankUri;
 
-        ViewModel ??= ServiceLocator.GetRequiredService<AppTabViewModel>();
-        ViewModel.SetReactiveWebView(new ReactiveWebView(MyWebView));
+        ViewModel = new AppTabViewModel(tabId, index);
+
+        ViewModel.SetReactiveWebView(new ReactiveWebView(MyWebView, documentTitle, faviconUrl, url));
 
         this.Bind(ViewModel, vm => vm.SearchBarText, v => v.SearchBar.Text).DisposeWith(Disposables);
         this.OneWayBind(ViewModel, vm => vm.CanStop, v => v.StopBtn.Visibility).DisposeWith(Disposables);
@@ -43,16 +45,25 @@ public sealed partial class AppTab : ReactiveAppTab, IDisposable
 
         this.WhenActivated(async d =>
         {
+            await MyWebView.EnsureCoreWebView2Async();
+
             if (MyWebView.Source == Constants.AboutBlankUri && !string.IsNullOrWhiteSpace(SearchBar.Text))
             {
-                await MyWebView.EnsureCoreWebView2Async();
                 ViewModel?.NavigateToSeachBarInput.Execute().Subscribe();
             }
             else if (MyWebView.Source == Constants.AboutBlankUri)
             {
                 SearchBar.Focus(FocusState.Programmatic);
             }
+
         });
+
+        MyWebView.ProcessKeyboardAccelerators += MyWebView_ProcessKeyboardAccelerators;
+    }
+
+    private void MyWebView_ProcessKeyboardAccelerators(UIElement sender, ProcessKeyboardAcceleratorEventArgs args)
+    {
+        Debug.WriteLine("Yo");
     }
 
     private void DetectEnterKey(VirtualKey key)
