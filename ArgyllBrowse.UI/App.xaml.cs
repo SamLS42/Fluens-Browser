@@ -1,39 +1,18 @@
-﻿using ArgyllBrowse.Data;
+﻿using ArgyllBrowse.AppCore.Contracts;
+using ArgyllBrowse.AppCore.Helpers;
+using ArgyllBrowse.AppCore.ViewModels;
+using ArgyllBrowse.AppCore.ViewModels.Settings.OnStartup;
+using ArgyllBrowse.Data;
 using ArgyllBrowse.Data.Services;
-using ArgyllBrowse.UI.Enums;
-using ArgyllBrowse.UI.Helpers;
 using ArgyllBrowse.UI.Services;
-using ArgyllBrowse.UI.ViewModels;
-using ArgyllBrowse.UI.ViewModels.Contracts;
-using ArgyllBrowse.UI.ViewModels.Settings.OnStartup;
-using ArgyllBrowse.UI.Views;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
-using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
-using Microsoft.UI.Xaml.Shapes;
 using ReactiveUI;
 
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.ApplicationModel;
-using Windows.ApplicationModel.Activation;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
-using Windows.Storage;
-using WinRT;
 
 namespace ArgyllBrowse.UI;
 

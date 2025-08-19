@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace ArgyllBrowse.UI.Enums;
+namespace ArgyllBrowse.AppCore.Enums;
 
 public enum OnStartupSetting
 {

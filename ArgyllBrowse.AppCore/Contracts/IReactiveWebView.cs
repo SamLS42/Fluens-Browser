@@ -1,8 +1,7 @@
-﻿using System;
-using System.Reactive;
+﻿using System.Reactive;
 using System.Reactive.Subjects;
 
-namespace ArgyllBrowse.UI.ViewModels.Contracts;
+namespace ArgyllBrowse.AppCore.Contracts;
 public interface IReactiveWebView : IDisposable
 {
     BehaviorSubject<string> DocumentTitle { get; }

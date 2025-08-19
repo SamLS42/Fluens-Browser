@@ -1,17 +1,12 @@
-﻿using ArgyllBrowse.Data.Services;
-using ArgyllBrowse.UI.Helpers;
-using ArgyllBrowse.UI.ViewModels.Contracts;
-using ArgyllBrowse.UI.ViewModels.Helpers;
+﻿using ArgyllBrowse.AppCore.Contracts;
+using ArgyllBrowse.AppCore.Helpers;
+using ArgyllBrowse.Data.Services;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
-using System;
-using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
-using System.Threading.Tasks;
-using System.Windows.Documents;
 
-namespace ArgyllBrowse.UI.ViewModels;
+namespace ArgyllBrowse.AppCore.ViewModels;
 public partial class AppTabViewModel : ReactiveObject, IDisposable
 {
     private const string httpsPrefix = "https://";

@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using System;
 
-namespace ArgyllBrowse.UI.Helpers;
+namespace ArgyllBrowse.AppCore.Helpers;
 
 public static class ServiceLocator
 {

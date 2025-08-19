@@ -1,5 +1,5 @@
-﻿using ArgyllBrowse.UI.ViewModels.Contracts;
-using ArgyllBrowse.UI.ViewModels.Helpers;
+﻿using ArgyllBrowse.AppCore.Contracts;
+using ArgyllBrowse.AppCore.Helpers;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.Web.WebView2.Core;
 using System;

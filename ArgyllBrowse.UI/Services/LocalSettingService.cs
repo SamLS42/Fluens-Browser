@@ -1,5 +1,5 @@
-﻿using ArgyllBrowse.UI.Enums;
-using ArgyllBrowse.UI.ViewModels.Contracts;
+﻿using ArgyllBrowse.AppCore.Contracts;
+using ArgyllBrowse.AppCore.Enums;
 using System;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;

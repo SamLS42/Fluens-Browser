@@ -1,12 +1,7 @@
 ﻿using ReactiveUI;
 using ReactiveUI.SourceGenerators;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace ArgyllBrowse.UI.ViewModels.Settings.History;
+namespace ArgyllBrowse.AppCore.ViewModels.Settings.History;
 internal partial class HistoryEntryViewModel : ReactiveObject
 {
     [Reactive]

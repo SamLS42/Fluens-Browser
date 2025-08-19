@@ -1,4 +1,3 @@
-using ArgyllBrowse.UI.Views.Settings.History;
 using DynamicData;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;

@@ -1,16 +1,8 @@
-﻿using ArgyllBrowse.UI.Enums;
-using ArgyllBrowse.UI.ViewModels.Contracts;
+﻿using ArgyllBrowse.AppCore.Contracts;
+using ArgyllBrowse.AppCore.Enums;
 using ReactiveUI;
-using ReactiveUI.SourceGenerators;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reactive;
-using System.Text;
-using System.Threading.Tasks;
-using Windows.Graphics.Printing;
 
-namespace ArgyllBrowse.UI.ViewModels.Settings.OnStartup;
+namespace ArgyllBrowse.AppCore.ViewModels.Settings.OnStartup;
 
 public partial class OnStartupConfigViewModel : ReactiveObject
 {

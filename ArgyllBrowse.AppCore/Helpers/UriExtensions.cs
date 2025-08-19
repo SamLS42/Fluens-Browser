@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Diagnostics.CodeAnalysis;
 
-namespace ArgyllBrowse.UI.ViewModels.Helpers;
+namespace ArgyllBrowse.AppCore.Helpers;
 public static class UriExtensions
 {
     public static Uri EnforceHttps([NotNull] this Uri uri)

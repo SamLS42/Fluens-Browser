@@ -1,6 +1,6 @@
-using ArgyllBrowse.UI.Enums;
-using ArgyllBrowse.UI.Helpers;
-using ArgyllBrowse.UI.ViewModels.Settings.OnStartup;
+using ArgyllBrowse.AppCore.Enums;
+using ArgyllBrowse.AppCore.Helpers;
+using ArgyllBrowse.AppCore.ViewModels.Settings.OnStartup;
 using Microsoft.UI.Xaml.Controls;
 using ReactiveUI;
 using System;

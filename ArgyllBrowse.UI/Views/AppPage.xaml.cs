@@ -1,11 +1,11 @@
+using ArgyllBrowse.AppCore.Enums;
+using ArgyllBrowse.AppCore.Helpers;
+using ArgyllBrowse.AppCore.ViewModels;
 using ArgyllBrowse.Data.Entities;
-using ArgyllBrowse.UI.Enums;
 using ArgyllBrowse.UI.Helpers;
 using ArgyllBrowse.UI.Services;
-using ArgyllBrowse.UI.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Input;
 using ReactiveUI;
 using System;
 using System.Linq;
@@ -43,7 +43,7 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable
             });
 
         Observable.FromEventPattern<SelectionChangedEventArgs>(tabView, nameof(tabView.SelectionChanged))
-            .Select(ep => ep.EventArgs.AddedItems.SingleOrDefault())
+            .Select(ep => tabView.SelectedItem)
             .WhereNotNull()
             .SelectMany(vm => vm.As<TabViewItem>().Content.As<AppTab>().ViewModel!.OpenConfig)
             .Subscribe(_ => SettingsDialog.IsOpen = !SettingsDialog.IsOpen)
@@ -64,8 +64,6 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable
                 SettingsDialogContent.Height = tabView.ActualHeight - (2 * SettingsDialogContent.Margin.Top);
             });
     }
-
-    private AppTab SelectedTab => tabView.SelectedItem.As<TabViewItem>().Content.As<AppTab>();
 
     private void SetTitleBar()
     {
@@ -93,68 +91,6 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable
 
         tab.Dispose();
     }
-
-    private void NewTabKeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
-    {
-        tabView.AddEmptyTab();
-        args.Handled = true;
-    }
-
-    private void CloseSelectedTabKeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
-    {
-        TabView tabView = (TabView)args.Element;
-        TabViewItem tab = (TabViewItem)tabView.SelectedItem;
-        if (tab is not null)
-        {
-            RemoveTab(tab);
-        }
-        args.Handled = true;
-    }
-
-    private void NavigateToNumberedTabKeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
-    {
-        TabView tabView = (TabView)args.Element;
-        int tabToSelect = 0;
-
-        switch (sender.Key)
-        {
-            case Windows.System.VirtualKey.Number1:
-                tabToSelect = 0;
-                break;
-            case Windows.System.VirtualKey.Number2:
-                tabToSelect = 1;
-                break;
-            case Windows.System.VirtualKey.Number3:
-                tabToSelect = 2;
-                break;
-            case Windows.System.VirtualKey.Number4:
-                tabToSelect = 3;
-                break;
-            case Windows.System.VirtualKey.Number5:
-                tabToSelect = 4;
-                break;
-            case Windows.System.VirtualKey.Number6:
-                tabToSelect = 5;
-                break;
-            case Windows.System.VirtualKey.Number7:
-                tabToSelect = 6;
-                break;
-            case Windows.System.VirtualKey.Number8:
-                tabToSelect = 7;
-                break;
-            case Windows.System.VirtualKey.Number9:
-                // Select the last tab
-                tabToSelect = tabView.TabItems.Count - 1;
-                break;
-        }
-
-        // Only select the tab if it is in the list.
-        if (tabToSelect < tabView.TabItems.Count)
-        {
-            tabView.SelectedIndex = tabToSelect;
-        }
-    }
-
     private void UpdateTabIndexes()
     {
         foreach (TabViewItem tabItem in tabView.TabItems.OfType<TabViewItem>())
@@ -215,12 +151,6 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable
     public void Dispose()
     {
         disposables.Dispose();
-    }
-
-    private void RefreshbKeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
-    {
-        SelectedTab.ViewModel!.Refresh.Execute().Subscribe();
-        args.Handled = true;
     }
 }
 

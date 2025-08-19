@@ -59,7 +59,7 @@
 		</Page>
 	</ItemGroup>
 	<ItemGroup>
-	  <ProjectReference Include="..\ArgyllBrowse.Data\ArgyllBrowse.Data.csproj" />
+	  <ProjectReference Include="..\ArgyllBrowse.AppCore\ArgyllBrowse.AppCore.csproj" />
 	  <ProjectReference Include="..\ArgyllBrowse.Services\ArgyllBrowse.Services.csproj" />
 	</ItemGroup>
 	<ItemGroup>

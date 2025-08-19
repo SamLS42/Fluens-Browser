@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.14.36221.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArgyllBrowse.Core", "ArgyllBrowse.Core\ArgyllBrowse.Core.csproj", "{FA97B28D-B289-4779-A71C-95A79026CCEB}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArgyllBrowse.Services", "ArgyllBrowse.Services\ArgyllBrowse.Services.csproj", "{FB892258-1AE1-4EFC-9908-9FF36B75C22B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArgyllBrowse.UI", "ArgyllBrowse.UI\ArgyllBrowse.UI.csproj", "{D278FC30-98D5-49D8-A920-4C72DDE83D74}"
@@ -17,6 +15,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArgyllBrowse.Data", "ArgyllBrowse.Data\ArgyllBrowse.Data.csproj", "{AB30A3D9-FF1E-4FE1-8999-BD8E33FD18F7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArgyllBrowse.AppCore", "ArgyllBrowse.AppCore\ArgyllBrowse.AppCore.csproj", "{E9945F1A-D027-48D5-B5C0-94E1F378A040}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|ARM64 = Debug|ARM64
@@ -27,18 +27,6 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{FA97B28D-B289-4779-A71C-95A79026CCEB}.Debug|ARM64.ActiveCfg = Debug|Any CPU
-		{FA97B28D-B289-4779-A71C-95A79026CCEB}.Debug|ARM64.Build.0 = Debug|Any CPU
-		{FA97B28D-B289-4779-A71C-95A79026CCEB}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{FA97B28D-B289-4779-A71C-95A79026CCEB}.Debug|x64.Build.0 = Debug|Any CPU
-		{FA97B28D-B289-4779-A71C-95A79026CCEB}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{FA97B28D-B289-4779-A71C-95A79026CCEB}.Debug|x86.Build.0 = Debug|Any CPU
-		{FA97B28D-B289-4779-A71C-95A79026CCEB}.Release|ARM64.ActiveCfg = Release|Any CPU
-		{FA97B28D-B289-4779-A71C-95A79026CCEB}.Release|ARM64.Build.0 = Release|Any CPU
-		{FA97B28D-B289-4779-A71C-95A79026CCEB}.Release|x64.ActiveCfg = Release|Any CPU
-		{FA97B28D-B289-4779-A71C-95A79026CCEB}.Release|x64.Build.0 = Release|Any CPU
-		{FA97B28D-B289-4779-A71C-95A79026CCEB}.Release|x86.ActiveCfg = Release|Any CPU
-		{FA97B28D-B289-4779-A71C-95A79026CCEB}.Release|x86.Build.0 = Release|Any CPU
 		{FB892258-1AE1-4EFC-9908-9FF36B75C22B}.Debug|ARM64.ActiveCfg = Debug|Any CPU
 		{FB892258-1AE1-4EFC-9908-9FF36B75C22B}.Debug|ARM64.Build.0 = Debug|Any CPU
 		{FB892258-1AE1-4EFC-9908-9FF36B75C22B}.Debug|x64.ActiveCfg = Debug|Any CPU
@@ -81,6 +69,18 @@ Global
 		{AB30A3D9-FF1E-4FE1-8999-BD8E33FD18F7}.Release|x64.Build.0 = Release|Any CPU
 		{AB30A3D9-FF1E-4FE1-8999-BD8E33FD18F7}.Release|x86.ActiveCfg = Release|Any CPU
 		{AB30A3D9-FF1E-4FE1-8999-BD8E33FD18F7}.Release|x86.Build.0 = Release|Any CPU
+		{E9945F1A-D027-48D5-B5C0-94E1F378A040}.Debug|ARM64.ActiveCfg = Debug|Any CPU
+		{E9945F1A-D027-48D5-B5C0-94E1F378A040}.Debug|ARM64.Build.0 = Debug|Any CPU
+		{E9945F1A-D027-48D5-B5C0-94E1F378A040}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{E9945F1A-D027-48D5-B5C0-94E1F378A040}.Debug|x64.Build.0 = Debug|Any CPU
+		{E9945F1A-D027-48D5-B5C0-94E1F378A040}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{E9945F1A-D027-48D5-B5C0-94E1F378A040}.Debug|x86.Build.0 = Debug|Any CPU
+		{E9945F1A-D027-48D5-B5C0-94E1F378A040}.Release|ARM64.ActiveCfg = Release|Any CPU
+		{E9945F1A-D027-48D5-B5C0-94E1F378A040}.Release|ARM64.Build.0 = Release|Any CPU
+		{E9945F1A-D027-48D5-B5C0-94E1F378A040}.Release|x64.ActiveCfg = Release|Any CPU
+		{E9945F1A-D027-48D5-B5C0-94E1F378A040}.Release|x64.Build.0 = Release|Any CPU
+		{E9945F1A-D027-48D5-B5C0-94E1F378A040}.Release|x86.ActiveCfg = Release|Any CPU
+		{E9945F1A-D027-48D5-B5C0-94E1F378A040}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,18 +1,12 @@
-﻿using ArgyllBrowse.Data.Entities;
-using ArgyllBrowse.UI.ViewModels.Helpers;
+﻿using ArgyllBrowse.AppCore.Helpers;
+using ArgyllBrowse.Data.Entities;
 using ArgyllBrowse.UI.Views;
-using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
-using ReactiveUI;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace ArgyllBrowse.UI.Helpers;
 internal static class TabViewExtensions

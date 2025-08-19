@@ -1,12 +1,10 @@
+using ArgyllBrowse.AppCore.Helpers;
+using ArgyllBrowse.AppCore.ViewModels;
 using ArgyllBrowse.UI.Helpers;
-using ArgyllBrowse.UI.ViewModels;
-using ArgyllBrowse.UI.ViewModels.Helpers;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Input;
 using ReactiveUI;
 using System;
-using System.Diagnostics;
-using System.Linq;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using Windows.System;
@@ -16,7 +14,7 @@ public partial class ReactiveAppTab : ReactiveUserControl<AppTabViewModel>;
 public sealed partial class AppTab : ReactiveAppTab, IDisposable
 {
     private readonly CompositeDisposable Disposables = [];
-
+    private readonly ReactiveWebView reactiveWebView;
     public AppTab(int tabId = 0, int? index = null, string? documentTitle = null, string? faviconUrl = null, Uri? url = null)
     {
         InitializeComponent();
@@ -25,8 +23,8 @@ public sealed partial class AppTab : ReactiveAppTab, IDisposable
 
         ViewModel = new AppTabViewModel(tabId, index);
 
-        ViewModel.SetReactiveWebView(new ReactiveWebView(MyWebView, documentTitle, faviconUrl, url));
-
+        reactiveWebView = new(MyWebView, documentTitle, faviconUrl, url);
+        ViewModel.SetReactiveWebView(reactiveWebView);
         this.Bind(ViewModel, vm => vm.SearchBarText, v => v.SearchBar.Text).DisposeWith(Disposables);
         this.OneWayBind(ViewModel, vm => vm.CanStop, v => v.StopBtn.Visibility).DisposeWith(Disposables);
         this.OneWayBind(ViewModel, vm => vm.CanRefresh, v => v.RefreshBtn.Visibility).DisposeWith(Disposables);
@@ -47,6 +45,8 @@ public sealed partial class AppTab : ReactiveAppTab, IDisposable
         {
             await MyWebView.EnsureCoreWebView2Async();
 
+            MyWebView.Focus(FocusState.Programmatic);
+
             if (MyWebView.Source == Constants.AboutBlankUri && !string.IsNullOrWhiteSpace(SearchBar.Text))
             {
                 ViewModel?.NavigateToSeachBarInput.Execute().Subscribe();
@@ -57,13 +57,6 @@ public sealed partial class AppTab : ReactiveAppTab, IDisposable
             }
 
         });
-
-        MyWebView.ProcessKeyboardAccelerators += MyWebView_ProcessKeyboardAccelerators;
-    }
-
-    private void MyWebView_ProcessKeyboardAccelerators(UIElement sender, ProcessKeyboardAcceleratorEventArgs args)
-    {
-        Debug.WriteLine("Yo");
     }
 
     private void DetectEnterKey(VirtualKey key)
@@ -84,5 +77,6 @@ public sealed partial class AppTab : ReactiveAppTab, IDisposable
     {
         Disposables.Dispose();
         ViewModel?.Dispose();
+        reactiveWebView.Dispose();
     }
 }

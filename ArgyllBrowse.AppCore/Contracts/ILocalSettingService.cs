@@ -1,7 +1,6 @@
-﻿using ArgyllBrowse.UI.Enums;
-using System;
+﻿using ArgyllBrowse.AppCore.Enums;
 
-namespace ArgyllBrowse.UI.ViewModels.Contracts;
+namespace ArgyllBrowse.AppCore.Contracts;
 public interface ILocalSettingService : IDisposable
 {
     IObservable<OnStartupSetting> OnStartupSettingChanges { get; }

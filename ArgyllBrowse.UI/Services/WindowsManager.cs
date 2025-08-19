@@ -1,10 +1,9 @@
-﻿using ArgyllBrowse.Data.Services;
-using ArgyllBrowse.UI.Enums;
-using ArgyllBrowse.UI.ViewModels.Contracts;
-using DynamicData;
+﻿using ArgyllBrowse.AppCore.Contracts;
+using ArgyllBrowse.AppCore.Enums;
+using ArgyllBrowse.Data.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
-using System;                        // for Action<T>
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
