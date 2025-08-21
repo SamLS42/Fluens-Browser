@@ -32,7 +32,6 @@ public sealed partial class AppTab : ReactiveAppTab, IDisposable
         this.BindCommand(ViewModel, vm => vm.GoForward, v => v.GoForwardBtn).DisposeWith(Disposables);
         this.BindCommand(ViewModel, vm => vm.Refresh, v => v.RefreshBtn).DisposeWith(Disposables);
         this.BindCommand(ViewModel, vm => vm.Stop, v => v.StopBtn).DisposeWith(Disposables);
-        this.BindCommand(ViewModel, vm => vm.OpenConfig, v => v.ConfigBtn).DisposeWith(Disposables);
 
         Observable.FromEventPattern<KeyRoutedEventArgs>(SearchBar, nameof(SearchBar.KeyDown))
             .Subscribe(ep => DetectEnterKey(ep.EventArgs.Key));
@@ -40,6 +39,15 @@ public sealed partial class AppTab : ReactiveAppTab, IDisposable
         Observable.FromEventPattern<RoutedEventArgs>(SearchBar, nameof(SearchBar.GotFocus))
             .Subscribe(_ => SearchBar.SelectAll());
 
+        Observable.FromEventPattern<RoutedEventArgs>(ConfigBtn, nameof(ConfigBtn.Click))
+            .Subscribe(_ => SettingsDialog.IsOpen = !SettingsDialog.IsOpen);
+
+        Observable.FromEventPattern<SizeChangedEventArgs>(MyWebView, nameof(MyWebView.SizeChanged))
+            .Subscribe(ep =>
+            {
+                SettingsDialogContent.Width = MyWebView.ActualWidth - (2 * SettingsDialogContent.Margin.Left);
+                SettingsDialogContent.Height = MyWebView.ActualHeight - (2 * SettingsDialogContent.Margin.Top);
+            });
 
         this.WhenActivated(async d =>
         {
@@ -65,12 +73,6 @@ public sealed partial class AppTab : ReactiveAppTab, IDisposable
         {
             ViewModel?.NavigateToSeachBarInput.Execute().Subscribe();
         }
-    }
-
-    private void OpenDevToolsWindow_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
-    {
-        Observable.FromAsync(() => MyWebView.EnsureCoreWebView2Async().AsTask())
-            .Subscribe(_ => MyWebView.CoreWebView2.OpenDevToolsWindow());
     }
 
     public void Dispose()

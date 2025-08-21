@@ -60,7 +60,6 @@
 	</ItemGroup>
 	<ItemGroup>
 	  <ProjectReference Include="..\ArgyllBrowse.AppCore\ArgyllBrowse.AppCore.csproj" />
-	  <ProjectReference Include="..\ArgyllBrowse.Services\ArgyllBrowse.Services.csproj" />
 	</ItemGroup>
 	<ItemGroup>
 	  <Page Update="Views\Settings\Everything.xaml">

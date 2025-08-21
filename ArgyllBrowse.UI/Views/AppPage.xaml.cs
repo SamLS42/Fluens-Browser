@@ -42,13 +42,6 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable
                 ep.EventArgs.AddedItems.FirstOrDefault()?.As<TabViewItem>().Content.As<AppTab>().ViewModel?.IsTabSelected = true;
             });
 
-        Observable.FromEventPattern<SelectionChangedEventArgs>(tabView, nameof(tabView.SelectionChanged))
-            .Select(ep => tabView.SelectedItem)
-            .WhereNotNull()
-            .SelectMany(vm => vm.As<TabViewItem>().Content.As<AppTab>().ViewModel!.OpenConfig)
-            .Subscribe(_ => SettingsDialog.IsOpen = !SettingsDialog.IsOpen)
-            .DisposeWith(disposables);
-
         Observable.FromEventPattern<TabView, TabViewTabCloseRequestedEventArgs>(tabView, nameof(tabView.TabCloseRequested))
             .Subscribe(ep => CloseTab(ep.EventArgs));
 
@@ -56,13 +49,6 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable
             .SkipWhile(_ => isLoaded is false)
             .Throttle(TimeSpan.FromSeconds(1), RxApp.MainThreadScheduler)
             .Subscribe(ep => UpdateTabIndexes());
-
-        Observable.FromEventPattern<SizeChangedEventArgs>(tabView, nameof(tabView.SizeChanged))
-            .Subscribe(ep =>
-            {
-                SettingsDialogContent.Width = tabView.ActualWidth - (2 * SettingsDialogContent.Margin.Left);
-                SettingsDialogContent.Height = tabView.ActualHeight - (2 * SettingsDialogContent.Margin.Top);
-            });
     }
 
     private void SetTitleBar()

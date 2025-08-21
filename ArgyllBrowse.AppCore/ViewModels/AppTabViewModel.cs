@@ -44,7 +44,6 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
     public ReactiveCommand<Unit, Unit> GoBack { get; private set; } = null!;
     public ReactiveCommand<Unit, Unit> GoForward { get; private set; } = null!;
     public ReactiveCommand<Unit, Unit> Stop { get; private set; } = null!;
-    public ReactiveCommand<Unit, Unit> OpenConfig { get; private set; } = null!;
 
     private BrowserDataService DataService { get; } = ServiceLocator.GetRequiredService<BrowserDataService>();
 
@@ -62,7 +61,6 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
         }
 
         NavigateToSeachBarInput = ReactiveCommand.Create(NavigateToSeachBarInputImpl);
-        OpenConfig = ReactiveCommand.Create(() => { });
 
         this.WhenAnyValue(x => x.Index)
             .WhereNotNull()

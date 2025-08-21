@@ -21,61 +21,74 @@
         </Style>
     </local:ReactiveAppTab.Resources>
 
-    <Grid Background="{ThemeResource SolidBackgroundFillColorTertiaryBrush}">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition />
-        </Grid.RowDefinitions>
-        <Grid
-            Padding="8"
-            BorderBrush="{ThemeResource CircleElevationBorderBrush}"
-            BorderThickness="0,0,0,1"
-            ColumnSpacing="4">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <Button x:Name="GoBackBtn" IsEnabled="{x:Bind MyWebView.CanGoBack, Mode=OneWay}">
-                <FontIcon Glyph="&#xE72B;" />
-            </Button>
-            <Button
-                x:Name="GoForwardBtn"
-                Grid.Column="1"
-                IsEnabled="{x:Bind MyWebView.CanGoForward, Mode=OneWay}">
-                <FontIcon Glyph="&#xE72A;" />
-            </Button>
-            <Button
-                x:Name="RefreshBtn"
-                Grid.Column="2"
-                Padding="8">
-                <FontIcon Glyph="&#xE777;" />
-            </Button>
-            <Button x:Name="StopBtn" Grid.Column="2">
-                <FontIcon Glyph="&#xE711;" />
-            </Button>
-            <TextBox
-                x:Name="SearchBar"
-                Grid.Column="3"
+    <Grid>
+        <Grid Background="{ThemeResource SolidBackgroundFillColorTertiaryBrush}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition />
+            </Grid.RowDefinitions>
+            <Grid
+                Padding="8"
                 BorderBrush="{ThemeResource CircleElevationBorderBrush}"
-                CornerRadius="16"
-                IsSpellCheckEnabled="False" />
-            <Button x:Name="ConfigBtn" Grid.Column="4">
-                <FontIcon Glyph="&#xE713;" />
-            </Button>
-        </Grid>
+                BorderThickness="0,0,0,1"
+                ColumnSpacing="4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Button x:Name="GoBackBtn" IsEnabled="{x:Bind MyWebView.CanGoBack, Mode=OneWay}">
+                    <FontIcon Glyph="&#xE72B;" />
+                </Button>
+                <Button
+                    x:Name="GoForwardBtn"
+                    Grid.Column="1"
+                    IsEnabled="{x:Bind MyWebView.CanGoForward, Mode=OneWay}">
+                    <FontIcon Glyph="&#xE72A;" />
+                </Button>
+                <Button
+                    x:Name="RefreshBtn"
+                    Grid.Column="2"
+                    Padding="8">
+                    <FontIcon Glyph="&#xE777;" />
+                </Button>
+                <Button x:Name="StopBtn" Grid.Column="2">
+                    <FontIcon Glyph="&#xE711;" />
+                </Button>
+                <TextBox
+                    x:Name="SearchBar"
+                    Grid.Column="3"
+                    BorderBrush="{ThemeResource CircleElevationBorderBrush}"
+                    CornerRadius="16"
+                    IsSpellCheckEnabled="False" />
+                <Button x:Name="ConfigBtn" Grid.Column="4">
+                    <FontIcon Glyph="&#xE713;" />
+                </Button>
+            </Grid>
 
-        <WebView2
-            x:Name="MyWebView"
+            <WebView2
+                x:Name="MyWebView"
+                Grid.Row="1"
+                DefaultBackgroundColor="{StaticResource SolidBackgroundFillColorTertiary}" />
+
+        </Grid>
+        <Popup
+            x:Name="SettingsDialog"
             Grid.Row="1"
-            DefaultBackgroundColor="{StaticResource SolidBackgroundFillColorTertiary}">
-            <WebView2.KeyboardAccelerators>
-                <KeyboardAccelerator Key="F12" Invoked="OpenDevToolsWindow_Invoked" />
-            </WebView2.KeyboardAccelerators>
-        </WebView2>
+            IsLightDismissEnabled="True"
+            LightDismissOverlayMode="On">
+            <Border
+                x:Name="SettingsDialogContent"
+                Margin="64"
+                BorderThickness="1"
+                CornerRadius="{StaticResource OverlayCornerRadius}">
+                <settings:SettingsView />
+            </Border>
+        </Popup>
     </Grid>
+
 
 
 </local:ReactiveAppTab>

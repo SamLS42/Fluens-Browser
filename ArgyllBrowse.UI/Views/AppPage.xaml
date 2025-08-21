@@ -23,19 +23,6 @@
                 <Grid x:Name="CustomDragRegion" Background="Transparent" />
             </TabView.TabStripFooter>
         </TabView>
-        <Popup
-            x:Name="SettingsDialog"
-            Grid.Row="1"
-            IsLightDismissEnabled="True"
-            LightDismissOverlayMode="On">
-            <Border
-                x:Name="SettingsDialogContent"
-                Margin="64"
-                BorderThickness="1"
-                CornerRadius="{StaticResource OverlayCornerRadius}">
-                <settings:SettingsView />
-            </Border>
-        </Popup>
     </Grid>
 
 </local:ReactiveAppPage>
