@@ -16,6 +16,11 @@
             <Setter Property="CornerRadius" Value="16" />
             <Setter Property="BorderBrush" Value="{ThemeResource CircleElevationBorderBrush}" />
         </Style>
+        <Style TargetType="ToggleButton">
+            <Setter Property="Padding" Value="8" />
+            <Setter Property="CornerRadius" Value="16" />
+            <Setter Property="BorderBrush" Value="{ThemeResource CircleElevationBorderBrush}" />
+        </Style>
         <Style TargetType="FontIcon">
             <Setter Property="FontSize" Value="16" />
         </Style>
@@ -63,9 +68,9 @@
                     BorderBrush="{ThemeResource CircleElevationBorderBrush}"
                     CornerRadius="16"
                     IsSpellCheckEnabled="False" />
-                <Button x:Name="ConfigBtn" Grid.Column="4">
+                <ToggleButton x:Name="ConfigBtn" Grid.Column="4">
                     <FontIcon Glyph="&#xE713;" />
-                </Button>
+                </ToggleButton>
             </Grid>
 
             <WebView2
@@ -77,12 +82,13 @@
         <Popup
             x:Name="SettingsDialog"
             Grid.Row="1"
-            IsLightDismissEnabled="True"
+            IsLightDismissEnabled="False"
             LightDismissOverlayMode="On">
             <Border
                 x:Name="SettingsDialogContent"
                 Margin="64"
-                BorderThickness="1"
+                BorderBrush="{StaticResource ContentDialogBorderThemeBrush}"
+                BorderThickness="{StaticResource ContentDialogBorderWidth}"
                 CornerRadius="{StaticResource OverlayCornerRadius}">
                 <settings:SettingsView />
             </Border>

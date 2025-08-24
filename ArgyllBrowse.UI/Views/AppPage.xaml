@@ -10,8 +10,6 @@
     mc:Ignorable="d">
 
     <Grid>
-
-
         <TabView
             x:Name="tabView"
             VerticalAlignment="Stretch"
@@ -20,7 +18,10 @@
                 <Grid x:Name="ShellTitleBarInset" Background="Transparent" />
             </TabView.TabStripHeader>
             <TabView.TabStripFooter>
-                <Grid x:Name="CustomDragRegion" Background="Transparent" />
+                <Grid
+                    x:Name="CustomDragRegion"
+                    MinWidth="188"
+                    Background="Transparent" />
             </TabView.TabStripFooter>
         </TabView>
     </Grid>

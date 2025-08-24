@@ -6,5 +6,6 @@
 		<AnalysisMode>all</AnalysisMode>
 		<CodeAnalysisTreatWarningsAsErrors>true</CodeAnalysisTreatWarningsAsErrors>
 		<EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+		<ImplicitUsings>true</ImplicitUsings>
 	</PropertyGroup>
 </Project>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<UserControl
+<local:ReactiveHistoryEntryView
     x:Class="ArgyllBrowse.UI.Views.Settings.History.HistoryEntryView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -10,21 +10,32 @@
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="80" />
             <ColumnDefinition />
             <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
 
-        <TextBlock x:Name="Time" Grid.Column="0" />
+        <TextBlock
+            x:Name="Time"
+            Grid.Column="0"
+            VerticalAlignment="Center" />
 
-
-        <HyperlinkButton Grid.Column="1">
-            <StackPanel Orientation="Horizontal">
-                <ImageIcon x:Name="Favicon" />
-                <TextBlock x:Name="DocumentTitle" />
-                <TextBlock x:Name="Host" />
-            </StackPanel>
-
-        </HyperlinkButton>
+        <Grid Grid.Column="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <HyperlinkButton x:Name="HyperlinkBtn">
+                <StackPanel Orientation="Horizontal">
+                    <ImageIcon x:Name="Favicon" Width="16" />
+                    <TextBlock x:Name="DocumentTitle" TextWrapping="NoWrap" />
+                </StackPanel>
+            </HyperlinkButton>
+            <TextBlock
+                x:Name="Host"
+                Grid.Column="1"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center" />
+        </Grid>
     </Grid>
-</UserControl>
+</local:ReactiveHistoryEntryView>

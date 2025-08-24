@@ -1,19 +1,14 @@
 ﻿using ArgyllBrowse.AppCore.Contracts;
 using ArgyllBrowse.AppCore.Enums;
-using ArgyllBrowse.Data.Services;
+using ArgyllBrowse.AppCore.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reactive.Linq;
-using System.Threading.Tasks;
-using WinRT;
 
 
 namespace ArgyllBrowse.UI.Services;
 
-public class WindowsManager(ILocalSettingService localSettingService, BrowserDataService dataService)
+public class WindowsManager(ILocalSettingService localSettingService, TabPersistencyService dataService)
 {
     public MainWindow CreateWindow()
     {
@@ -25,12 +20,21 @@ public class WindowsManager(ILocalSettingService localSettingService, BrowserDat
         return newWindow;
     }
 
-    private void TrackWindow(MainWindow window)
+    public MainWindow CreateUnTrackedWindow()
+    {
+        MainWindow newWindow = new()
+        {
+            SystemBackdrop = new MicaBackdrop()
+        };
+        return newWindow;
+    }
+
+    public void TrackWindow(Window window)
     {
         Observable.FromEventPattern<object, WindowEventArgs>(window, nameof(window.Closed))
            .Subscribe(ep =>
            {
-               ActiveWindows.Remove(ep.Sender.As<MainWindow>());
+               ActiveWindows.Remove(window);
 
                if (ActiveWindows.Count == 0)
                {
@@ -53,10 +57,10 @@ public class WindowsManager(ILocalSettingService localSettingService, BrowserDat
         await dataService.ClearOpenTabsAsync();
     }
 
-    public MainWindow? GetWindowForElement(UIElement element)
+    public Window? GetWindowForElement(UIElement element)
     {
         return ActiveWindows.FirstOrDefault(w => element.XamlRoot == w.Content.XamlRoot);
     }
 
-    private List<MainWindow> ActiveWindows { get; } = [];
+    private List<Window> ActiveWindows { get; } = [];
 }

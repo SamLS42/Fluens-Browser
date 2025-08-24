@@ -7,30 +7,25 @@ using ArgyllBrowse.UI.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using ReactiveUI;
-using System;
-using System.Linq;
-using System.Reactive.Disposables;
+using System.Diagnostics.CodeAnalysis;
+using System.Reactive;
 using System.Reactive.Linq;
-using System.Threading.Tasks;
 using Windows.Foundation.Collections;
 using WinRT;
 
 namespace ArgyllBrowse.UI.Views;
 
-public sealed partial class AppPage : ReactiveAppPage, IDisposable
+public sealed partial class AppPage : ReactiveAppPage
 {
-    private readonly CompositeDisposable disposables = [];
     private WindowsManager WindowsManager { get; } = ServiceLocator.GetRequiredService<WindowsManager>();
-    private bool isLoaded;
+    private static Window? TabTearOutWindow { get; set; }
+    public UIElement TitleBar => CustomDragRegion;
 
     public AppPage()
     {
         InitializeComponent();
 
         ViewModel ??= ServiceLocator.GetRequiredService<AppPageViewModel>();
-
-        Observable.FromEventPattern<RoutedEventArgs>(this, nameof(Loaded))
-            .Subscribe(_ => SetTitleBar());
 
         Observable.FromEventPattern<TabView, object>(tabView, nameof(tabView.AddTabButtonClick))
             .Subscribe(_ => tabView.AddEmptyTab());
@@ -43,24 +38,7 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable
             });
 
         Observable.FromEventPattern<TabView, TabViewTabCloseRequestedEventArgs>(tabView, nameof(tabView.TabCloseRequested))
-            .Subscribe(ep => CloseTab(ep.EventArgs));
-
-        Observable.FromEventPattern<TabView, IVectorChangedEventArgs>(tabView, nameof(tabView.TabItemsChanged))
-            .SkipWhile(_ => isLoaded is false)
-            .Throttle(TimeSpan.FromSeconds(1), RxApp.MainThreadScheduler)
-            .Subscribe(ep => UpdateTabIndexes());
-    }
-
-    private void SetTitleBar()
-    {
-        MainWindow currentWindow = WindowsManager.GetWindowForElement(this)!;
-        currentWindow.SetTitleBar(CustomDragRegion);
-        CustomDragRegion.MinWidth = 188;
-    }
-
-    private void CloseTab(TabViewTabCloseRequestedEventArgs eventArgs)
-    {
-        RemoveTab(eventArgs.Tab);
+            .Subscribe(ep => RemoveTab(ep.EventArgs.Tab));
     }
 
     private void RemoveTab(TabViewItem tabViewItem)
@@ -77,7 +55,8 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable
 
         tab.Dispose();
     }
-    private void UpdateTabIndexes()
+
+    private void UpdateTabIndexes(EventPattern<TabView, IVectorChangedEventArgs> pattern)
     {
         foreach (TabViewItem tabItem in tabView.TabItems.OfType<TabViewItem>())
         {
@@ -129,14 +108,37 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable
 
                 tabView.SelectedItem ??= tabView.TabItems.First();
 
-                isLoaded = true;
-
+                Observable.FromEventPattern<TabView, IVectorChangedEventArgs>(tabView, nameof(tabView.TabItemsChanged))
+                    .Throttle(TimeSpan.FromMilliseconds(200), RxApp.MainThreadScheduler)
+                    .Subscribe(UpdateTabIndexes);
             });
     }
 
-    public void Dispose()
+    private class AppTabViewItemComparer : IEqualityComparer<TabViewItem>
     {
-        disposables.Dispose();
+        private static readonly Lazy<AppTabViewItemComparer> lazy = new(() => new AppTabViewItemComparer());
+
+        public static AppTabViewItemComparer Instance => lazy.Value;
+
+        public bool Equals(TabViewItem? x, TabViewItem? y)
+        {
+            if (ReferenceEquals(x, y))
+            {
+                return true;
+            }
+
+            if (x is null || y is null)
+            {
+                return false;
+            }
+
+            return x.Content.As<AppTab>().ViewModel!.TabId == y.Content.As<AppTab>().ViewModel!.TabId;
+        }
+
+        public int GetHashCode([DisallowNull] TabViewItem obj)
+        {
+            return obj.Content.As<AppTab>().ViewModel!.TabId.GetHashCode();
+        }
     }
 }
 

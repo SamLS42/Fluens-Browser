@@ -1,17 +1,14 @@
 ﻿using ArgyllBrowse.AppCore.Contracts;
 using ArgyllBrowse.AppCore.Helpers;
+using ArgyllBrowse.AppCore.Services;
 using ArgyllBrowse.AppCore.ViewModels;
 using ArgyllBrowse.AppCore.ViewModels.Settings.OnStartup;
 using ArgyllBrowse.Data;
-using ArgyllBrowse.Data.Services;
 using ArgyllBrowse.UI.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using ReactiveUI;
-
-using System;
-using System.Linq;
 using System.Reactive.Linq;
 
 namespace ArgyllBrowse.UI;
@@ -36,7 +33,8 @@ public partial class App : Application
             .AddTransient<AppTabViewModel>()
             .AddSingleton<OnStartupConfigViewModel>()
             .AddSingleton<WindowsManager>()
-            .AddSingleton<BrowserDataService>()
+            .AddSingleton<TabPersistencyService>()
+            .AddSingleton<HistoryService>()
             .AddSingleton<ILocalSettingService, LocalSettingService>()
             .AddPooledDbContextFactory<BrowserDbContext>(opts =>
             {

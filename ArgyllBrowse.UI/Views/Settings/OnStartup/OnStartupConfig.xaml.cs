@@ -3,8 +3,6 @@ using ArgyllBrowse.AppCore.Helpers;
 using ArgyllBrowse.AppCore.ViewModels.Settings.OnStartup;
 using Microsoft.UI.Xaml.Controls;
 using ReactiveUI;
-using System;
-using System.Linq;
 using System.Reactive.Linq;
 using WinRT;
 

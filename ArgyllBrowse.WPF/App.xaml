@@ -6,43 +6,4 @@
     xmlns:dragablz="http://dragablz.net/winfx/xaml/dragablz"
     xmlns:local="clr-namespace:ArgyllBrowse.WPF"
     StartupUri="MainWindow.xaml"
-    ThemeMode="System">
-    <Application.Resources>
-        <ResourceDictionary>
-            <Style
-                x:Key="DragablzItemsControlStyle"
-                BasedOn="{StaticResource {x:Type dragablz:DragablzItemsControl}}"
-                TargetType="{x:Type dragablz:DragablzItemsControl}" />
-
-            <Style BasedOn="{StaticResource {x:Type dragablz:TabablzControl}}" TargetType="{x:Type dragablz:TabablzControl}">
-                <Setter Property="ShowDefaultAddButton" Value="True" />
-                <Setter Property="ShowDefaultCloseButton" Value="True" />
-                <Setter Property="NewItemFactory" Value="{x:Static apptab:Utils.NewItemFactory}" />
-                <Setter Property="Background" Value="{DynamicResource SolidBackgroundFillColorSecondaryBrush}" />
-                <Setter Property="BorderBrush" Value="{DynamicResource SolidBackgroundFillColorSecondaryBrush}" />
-                <Setter Property="ItemContainerStyle">
-                    <Setter.Value>
-                        <Style BasedOn="{StaticResource {x:Type dragablz:DragablzItem}}" TargetType="{x:Type dragablz:DragablzItem}">
-                            <Setter Property="Background" Value="Black" />
-                            <Setter Property="BorderThickness" Value="2" />
-                        </Style>
-                    </Setter.Value>
-                </Setter>
-                <Setter Property="HeaderItemTemplate">
-                    <Setter.Value>
-                        <DataTemplate DataType="{x:Type apptab:TabContent}">
-                            <Label Content="{Binding Header}" />
-                        </DataTemplate>
-                    </Setter.Value>
-                </Setter>
-                <Setter Property="ContentTemplate">
-                    <Setter.Value>
-                        <DataTemplate DataType="{x:Type apptab:TabContent}">
-                            <ContentPresenter Margin="4" Content="{Binding Content}" />
-                        </DataTemplate>
-                    </Setter.Value>
-                </Setter>
-            </Style>
-        </ResourceDictionary>
-    </Application.Resources>
-</Application>
+    ThemeMode="System" />

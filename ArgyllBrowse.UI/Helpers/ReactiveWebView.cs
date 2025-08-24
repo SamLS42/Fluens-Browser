@@ -2,8 +2,6 @@
 using ArgyllBrowse.AppCore.Helpers;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.Web.WebView2.Core;
-using System;
-using System.Linq;
 using System.Reactive;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
@@ -50,10 +48,17 @@ internal sealed partial class ReactiveWebView : IReactiveWebView
                 .Subscribe(_ => FaviconUrl.OnNext(MyWebView.CoreWebView2.FaviconUri))
                 .DisposeWith(Disposables);
 
-            Observable.FromEventPattern(MyWebView.CoreWebView2, nameof(MyWebView.CoreWebView2.NavigationCompleted))
-                .Subscribe(_ =>
+            Observable.FromEventPattern<CoreWebView2, CoreWebView2NavigationCompletedEventArgs>(MyWebView.CoreWebView2, nameof(MyWebView.CoreWebView2.NavigationCompleted))
+                .Subscribe(ep =>
                 {
-                    NavigationCompleted.OnNext(Unit.Default);
+                    if (ep.EventArgs.IsSuccess)
+                    {
+                        NavigationCompleted.OnNext(Unit.Default);
+                    }
+                    else
+                    {
+                        FaviconUrl.OnNext(string.Empty);
+                    }
                 })
                 .DisposeWith(Disposables);
 

@@ -1,8 +1,9 @@
-﻿using ArgyllBrowse.Data.Entities;
+﻿using ArgyllBrowse.Data;
+using ArgyllBrowse.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace ArgyllBrowse.Data.Services;
-public class BrowserDataService(IDbContextFactory<BrowserDbContext> dbContextFactory)
+namespace ArgyllBrowse.AppCore.Services;
+public class TabPersistencyService(IDbContextFactory<BrowserDbContext> dbContextFactory)
 {
     public async Task<BrowserTab[]> GetOpenTabsAsync()
     {

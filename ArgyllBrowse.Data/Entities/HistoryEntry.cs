@@ -1,4 +1,9 @@
-﻿namespace ArgyllBrowse.Data.Entities;
+﻿using Microsoft.EntityFrameworkCore;
+
+namespace ArgyllBrowse.Data.Entities;
+
+[Index(nameof(Url), IsUnique = true)]
+[Index(nameof(LastVisitedOn))]
 public class HistoryEntry
 {
     public int Id { get; set; }

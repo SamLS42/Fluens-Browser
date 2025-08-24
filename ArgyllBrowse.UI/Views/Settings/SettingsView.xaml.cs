@@ -1,9 +1,7 @@
+using ArgyllBrowse.UI.Views.Settings.History;
 using DynamicData;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reactive.Linq;
 using WinRT;
 
@@ -24,6 +22,12 @@ public sealed partial class SettingsView : UserControl
                     Content = "Everything",
                     Tag = typeof(Everything),
                     Icon = new FontIcon() {Glyph = "\uF8B0" },
+                },
+                new NavigationViewItem()
+                {
+                    Content = "History",
+                    Tag = typeof(HistoryPage),
+                    Icon = new FontIcon() {Glyph = "\uE81C" },
                 },
             ]);
 

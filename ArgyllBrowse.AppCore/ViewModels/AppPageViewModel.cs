@@ -1,9 +1,10 @@
-﻿using ArgyllBrowse.Data.Entities;
-using ArgyllBrowse.Data.Services;
+﻿using ArgyllBrowse.AppCore.Services;
+using ArgyllBrowse.Data.Entities;
 
 namespace ArgyllBrowse.AppCore.ViewModels;
-public class AppPageViewModel(BrowserDataService dataService)
+public class AppPageViewModel(TabPersistencyService dataService)
 {
+
     public async Task<BrowserTab[]> GetOpenTabsAsync()
     {
         return await dataService.GetOpenTabsAsync();

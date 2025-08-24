@@ -1,6 +1,6 @@
 ﻿using ArgyllBrowse.AppCore.Contracts;
 using ArgyllBrowse.AppCore.Helpers;
-using ArgyllBrowse.Data.Services;
+using ArgyllBrowse.AppCore.Services;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using System.Reactive;
@@ -15,9 +15,7 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
     private IReactiveWebView ReactiveWebView { get; set; } = null!;
     public IObservable<string> DocumentTitle => ReactiveWebView.DocumentTitle.AsObservable();
     public IObservable<string> FaviconUrl => ReactiveWebView.FaviconUrl.AsObservable();
-    public IObservable<Unit> NavigationStarting => ReactiveWebView.NavigationStarting.AsObservable();
-    public IObservable<Unit> NavigationCompleted => ReactiveWebView.NavigationCompleted.AsObservable();
-    public IObservable<bool> Isloading => ReactiveWebView.IsLoading.AsObservable();
+    public IObservable<bool> IsLoading => ReactiveWebView.IsLoading.AsObservable();
 
     public int TabId { get; set; }
 
@@ -39,13 +37,18 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
     [Reactive]
     public partial string SearchBarText { get; set; } = string.Empty;
 
-    public ReactiveCommand<Unit, Unit> NavigateToSeachBarInput { get; }
+    [Reactive]
+    public partial bool SettingsDialogIsOpen { get; set; }
+
+    public ReactiveCommand<Unit, Unit> NavigateToSearchBarInput { get; }
     public ReactiveCommand<Unit, Unit> Refresh { get; private set; } = null!;
     public ReactiveCommand<Unit, Unit> GoBack { get; private set; } = null!;
     public ReactiveCommand<Unit, Unit> GoForward { get; private set; } = null!;
     public ReactiveCommand<Unit, Unit> Stop { get; private set; } = null!;
+    public ReactiveCommand<Unit, Unit> ToggleSettingsDialogIsOpen { get; private set; }
 
-    private BrowserDataService DataService { get; } = ServiceLocator.GetRequiredService<BrowserDataService>();
+    private TabPersistencyService DataService { get; } = ServiceLocator.GetRequiredService<TabPersistencyService>();
+    private HistoryService HistoryService { get; } = ServiceLocator.GetRequiredService<HistoryService>();
 
     public AppTabViewModel(int tabId = 0, int? index = null)
     {
@@ -60,7 +63,9 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
             TabId = tabId;
         }
 
-        NavigateToSeachBarInput = ReactiveCommand.Create(NavigateToSeachBarInputImpl);
+        ToggleSettingsDialogIsOpen = ReactiveCommand.Create(() => { SettingsDialogIsOpen = !SettingsDialogIsOpen; });
+
+        NavigateToSearchBarInput = ReactiveCommand.Create(NavigateToSearchBarInputImpl);
 
         this.WhenAnyValue(x => x.Index)
             .WhereNotNull()
@@ -68,15 +73,19 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
 
         this.WhenAnyValue(x => x.Url)
             .WhereNotNull()
-            .Subscribe(async url => await DataService.SetTabUrlAsync(TabId, url));
+            .Subscribe(async url =>
+            {
+                await DataService.SetTabUrlAsync(TabId, url);
+                UpdateSearchBar();
+            });
 
         this.WhenAnyValue(x => x.IsTabSelected)
             .Subscribe(async isSelected => await DataService.SetIsTabSelectedAsync(TabId, isSelected));
+    }
 
-        this.WhenAnyValue(x => x.Url)
-            .WhereNotNull()
-            .Subscribe(url => UpdateSearchBar());
-
+    private async Task UpdateHistoryAsync(CancellationToken cancellationToken = default)
+    {
+        await HistoryService.AddEntryAsync(ReactiveWebView.Url.Value, ReactiveWebView.FaviconUrl.Value, ReactiveWebView.DocumentTitle.Value, cancellationToken);
     }
 
     public void SetReactiveWebView(IReactiveWebView reactiveWebView)
@@ -89,39 +98,52 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
         Stop = ReactiveCommand.Create(ReactiveWebView.StopNavigation);
 
         ReactiveWebView.IsLoading.Subscribe(SetStopRefreshVisibility);
-
         ReactiveWebView.Url.Subscribe(url => Url = url);
+        FaviconUrl.Subscribe(async faviconUrl => await DataService.SaveTabFaviconUrlAsync(TabId, faviconUrl));
+        DocumentTitle.Subscribe(async documentTitle => await DataService.SaveTabDocumentTitleAsync(TabId, documentTitle));
 
-        FaviconUrl
-            .Subscribe(async faviconUrl => await DataService.SaveTabFaviconUrlAsync(TabId, faviconUrl));
-
-        DocumentTitle
-            .Subscribe(async documentTitle => await DataService.SaveTabDocumentTitleAsync(TabId, documentTitle));
+        ReactiveWebView.NavigationCompleted
+            .Merge(ReactiveWebView.FaviconUrl.Where(faviconUrl => !string.IsNullOrWhiteSpace(faviconUrl)).Select(_ => Unit.Default))
+            .Throttle(TimeSpan.FromSeconds(1))
+            .Subscribe(async _ => await UpdateHistoryAsync());
     }
 
-    private void NavigateToSeachBarInputImpl()
+    private void NavigateToSearchBarInputImpl()
     {
-        string text = SearchBarText.Contains('.', StringComparison.OrdinalIgnoreCase)
-            && SearchBarText[0] != '.'
-            && SearchBarText[^1] != '.'
-                && (SearchBarText.StartsWith(httpsPrefix, StringComparison.OrdinalIgnoreCase)
-                    || SearchBarText.StartsWith(httpPrefix, StringComparison.OrdinalIgnoreCase))
-        ? SearchBarText
-        : httpPrefix + SearchBarText;
+        // Normalize input
+        var search = (SearchBarText ?? string.Empty).Trim();
+        if (string.IsNullOrEmpty(search))
+            return;
 
-        Uri url;
+        bool containsDot = search.Contains('.', StringComparison.Ordinal);
+        bool startsOrEndsWithDot = search.StartsWith('.') || search.EndsWith('.');
+        bool hasScheme = search.StartsWith(httpsPrefix, StringComparison.OrdinalIgnoreCase)
+                      || search.StartsWith(httpPrefix, StringComparison.OrdinalIgnoreCase);
 
-        if (Uri.TryCreate(text, UriKind.Absolute, out Uri? result))
+        // Follow original logic: only use the raw input as a URL if it contains a dot, does not start/end with a dot,
+        // and already begins with http(s). Otherwise prepend https://
+
+        string candidate;
+
+        if (containsDot && !startsOrEndsWithDot && !hasScheme)
         {
-            url = result;
+            candidate = httpsPrefix + search;
         }
         else
         {
-            url = new Uri($"https://duckduckgo.com/?q={SearchBarText}");
+            candidate = search;
+        }
+
+        // Try to make an absolute Uri; if that fails, fall back to a search query (DuckDuckGo)
+        if (!Uri.TryCreate(candidate, UriKind.Absolute, out var url))
+        {
+            var query = Uri.EscapeDataString(search);
+            url = new Uri($"https://duckduckgo.com/?q={query}");
         }
 
         ReactiveWebView?.NavigateToUrl(url);
     }
+
 
     private void UpdateSearchBar()
     {

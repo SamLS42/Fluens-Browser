@@ -19,7 +19,7 @@ csharp_style_expression_bodied_indexers = true:silent
 csharp_style_expression_bodied_accessors = true:silent
 csharp_style_expression_bodied_lambdas = true:silent
 csharp_style_expression_bodied_local_functions = false:silent
-dotnet_diagnostic.CA1515.severity = suggestion
+dotnet_diagnostic.CA1515.severity = none
 dotnet_diagnostic.CA1812.severity = suggestion
 
 [*.{cs,vb}]
