@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Fluens.UI (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "Fluens.UI (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
