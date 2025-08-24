@@ -47,7 +47,9 @@ public sealed partial class ReactiveWebView : IReactiveWebView
                 .DisposeWith(Disposables);
 
             Observable.FromEventPattern<CoreWebView2, object>(MyWebView.CoreWebView2, nameof(MyWebView.CoreWebView2.FaviconChanged))
-                .Subscribe(_ => FaviconUrl.OnNext(MyWebView.CoreWebView2.FaviconUri))
+                .Select(_ => MyWebView.CoreWebView2.FaviconUri)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Subscribe(x => FaviconUrl.OnNext(x))
                 .DisposeWith(Disposables);
 
             Observable.FromEventPattern<CoreWebView2, CoreWebView2NavigationCompletedEventArgs>(MyWebView.CoreWebView2, nameof(MyWebView.CoreWebView2.NavigationCompleted))
