@@ -91,3 +91,5 @@ dotnet_diagnostic.CA1056.severity = none
 dotnet_diagnostic.CA1822.severity = silent
 dotnet_diagnostic.CA1852.severity = none
 dotnet_diagnostic.CA1054.severity = suggestion
+dotnet_style_prefer_compound_assignment = true:suggestion
+dotnet_diagnostic.CA2000.severity = none

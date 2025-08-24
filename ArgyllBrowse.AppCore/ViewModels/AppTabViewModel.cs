@@ -11,13 +11,15 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
 {
     private const string httpsPrefix = "https://";
     private const string httpPrefix = "http://";
+    private string? documentTitle;
+    private string? faviconUrl;
 
     private IReactiveWebView ReactiveWebView { get; set; } = null!;
     public IObservable<string> DocumentTitle => ReactiveWebView.DocumentTitle.AsObservable();
     public IObservable<string> FaviconUrl => ReactiveWebView.FaviconUrl.AsObservable();
     public IObservable<bool> IsLoading => ReactiveWebView.IsLoading.AsObservable();
 
-    public int TabId { get; set; }
+    public int Id { get; set; }
 
     [Reactive]
     public partial bool CanStop { get; set; }
@@ -29,7 +31,7 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
     public partial int? Index { get; set; }
 
     [Reactive]
-    public partial bool IsTabSelected { get; set; }
+    public partial bool IsSelected { get; set; }
 
     [Reactive]
     public partial Uri Url { get; set; } = null!;
@@ -50,18 +52,14 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
     private TabPersistencyService DataService { get; } = ServiceLocator.GetRequiredService<TabPersistencyService>();
     private HistoryService HistoryService { get; } = ServiceLocator.GetRequiredService<HistoryService>();
 
-    public AppTabViewModel(int tabId = 0, int? index = null)
+    public AppTabViewModel(int id, Uri uri, bool isSelected = true, int index = -1, string? documentTitle = null, string? faviconUrl = null)
     {
+        Id = id;
         Index = index;
-
-        if (tabId == 0)
-        {
-            TabId = DataService.CreateTab(Constants.AboutBlankUri);
-        }
-        else
-        {
-            TabId = tabId;
-        }
+        this.documentTitle = documentTitle;
+        this.faviconUrl = faviconUrl;
+        Url = uri;
+        IsSelected = isSelected;
 
         ToggleSettingsDialogIsOpen = ReactiveCommand.Create(() => { SettingsDialogIsOpen = !SettingsDialogIsOpen; });
 
@@ -69,18 +67,18 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
 
         this.WhenAnyValue(x => x.Index)
             .WhereNotNull()
-            .Subscribe(async index => await DataService.SetTabIndexAsync(TabId, index!.Value));
+            .Subscribe(async index => await DataService.SetTabIndexAsync(Id, index!.Value));
 
         this.WhenAnyValue(x => x.Url)
             .WhereNotNull()
             .Subscribe(async url =>
             {
-                await DataService.SetTabUrlAsync(TabId, url);
+                await DataService.SetTabUrlAsync(Id, url);
                 UpdateSearchBar();
             });
 
-        this.WhenAnyValue(x => x.IsTabSelected)
-            .Subscribe(async isSelected => await DataService.SetIsTabSelectedAsync(TabId, isSelected));
+        this.WhenAnyValue(x => x.IsSelected)
+            .Subscribe(async isSelected => await DataService.SetIsTabSelectedAsync(Id, isSelected));
     }
 
     private async Task UpdateHistoryAsync(CancellationToken cancellationToken = default)
@@ -91,6 +89,7 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
     public void SetReactiveWebView(IReactiveWebView reactiveWebView)
     {
         ReactiveWebView = reactiveWebView;
+        ReactiveWebView.Setup(documentTitle, faviconUrl, Url);
 
         GoBack = ReactiveCommand.Create(ReactiveWebView.GoBack);
         GoForward = ReactiveCommand.Create(ReactiveWebView.GoForward);
@@ -99,8 +98,8 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
 
         ReactiveWebView.IsLoading.Subscribe(SetStopRefreshVisibility);
         ReactiveWebView.Url.Subscribe(url => Url = url);
-        FaviconUrl.Subscribe(async faviconUrl => await DataService.SaveTabFaviconUrlAsync(TabId, faviconUrl));
-        DocumentTitle.Subscribe(async documentTitle => await DataService.SaveTabDocumentTitleAsync(TabId, documentTitle));
+        FaviconUrl.Subscribe(async faviconUrl => await DataService.SaveTabFaviconUrlAsync(Id, faviconUrl));
+        DocumentTitle.Subscribe(async documentTitle => await DataService.SaveTabDocumentTitleAsync(Id, documentTitle));
 
         ReactiveWebView.NavigationCompleted
             .Merge(ReactiveWebView.FaviconUrl.Where(faviconUrl => !string.IsNullOrWhiteSpace(faviconUrl)).Select(_ => Unit.Default))
@@ -111,9 +110,11 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
     private void NavigateToSearchBarInputImpl()
     {
         // Normalize input
-        var search = (SearchBarText ?? string.Empty).Trim();
+        string search = (SearchBarText ?? string.Empty).Trim();
         if (string.IsNullOrEmpty(search))
+        {
             return;
+        }
 
         bool containsDot = search.Contains('.', StringComparison.Ordinal);
         bool startsOrEndsWithDot = search.StartsWith('.') || search.EndsWith('.');
@@ -135,9 +136,9 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
         }
 
         // Try to make an absolute Uri; if that fails, fall back to a search query (DuckDuckGo)
-        if (!Uri.TryCreate(candidate, UriKind.Absolute, out var url))
+        if (!Uri.TryCreate(candidate, UriKind.Absolute, out Uri? url))
         {
-            var query = Uri.EscapeDataString(search);
+            string query = Uri.EscapeDataString(search);
             url = new Uri($"https://duckduckgo.com/?q={query}");
         }
 
@@ -177,7 +178,5 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
     protected virtual void Dispose(bool dispose)
     {
         ReactiveWebView.Dispose();
-
-        Observable.FromAsync(_ => DataService.DeleteTabAsync(TabId)).Subscribe();
     }
 }

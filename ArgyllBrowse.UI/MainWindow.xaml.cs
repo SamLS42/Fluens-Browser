@@ -13,6 +13,8 @@ public sealed partial class MainWindow : Window
 
         Observable.FromEventPattern<RoutedEventArgs>(Page, nameof(Page.Loaded))
             .Subscribe(ep => SetTitleBar(Page.TitleBar));
+
+        Page.ViewModel!.HasNoTabs.Subscribe(_ => Close());
     }
 
     internal void ApplyOnStartupSetting(OnStartupSetting onStartupSetting)

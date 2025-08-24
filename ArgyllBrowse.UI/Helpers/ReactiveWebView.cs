@@ -8,21 +8,19 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 
 namespace ArgyllBrowse.UI.Helpers;
-internal sealed partial class ReactiveWebView : IReactiveWebView
+public sealed partial class ReactiveWebView : IReactiveWebView
 {
     private readonly CompositeDisposable Disposables = [];
-    private WebView2 MyWebView { get; } = null!;
+    public required WebView2 MyWebView { get; set; }
     public BehaviorSubject<bool> IsLoading { get; } = new(false);
-    public BehaviorSubject<string> DocumentTitle { get; }
-    public BehaviorSubject<string> FaviconUrl { get; private set; }
+    public BehaviorSubject<string> DocumentTitle { get; private set; } = null!;
+    public BehaviorSubject<string> FaviconUrl { get; private set; } = null!;
     public Subject<Unit> NavigationStarting { get; } = new();
     public Subject<Unit> NavigationCompleted { get; } = new();
-    public BehaviorSubject<Uri> Url { get; }
+    public BehaviorSubject<Uri> Url { get; private set; } = null!;
 
-    public ReactiveWebView(WebView2 webView, string? documentTitle = null, string? faviconUrl = null, Uri? url = null)
+    public void Setup(string? documentTitle = null, string? faviconUrl = null, Uri? url = null)
     {
-        MyWebView = webView;
-
         DocumentTitle = new(documentTitle ?? string.Empty);
         FaviconUrl = new(faviconUrl ?? string.Empty);
         Url = new(url ?? Constants.AboutBlankUri);

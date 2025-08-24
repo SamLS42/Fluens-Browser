@@ -15,4 +15,5 @@ public interface IReactiveWebView : IDisposable
     void StopNavigation();
     void Refresh();
     void NavigateToUrl(Uri url);
+    void Setup(string? documentTitle = null, string? faviconUrl = null, Uri? url = null);
 }

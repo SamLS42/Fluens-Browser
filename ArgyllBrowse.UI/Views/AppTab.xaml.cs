@@ -14,16 +14,16 @@ public sealed partial class AppTab : ReactiveAppTab, IDisposable
 {
     private readonly CompositeDisposable Disposables = [];
     private readonly ReactiveWebView reactiveWebView;
-    public AppTab(int tabId = 0, int? index = null, string? documentTitle = null, string? faviconUrl = null, Uri? url = null)
+    public AppTab(AppTabViewModel viewModel)
     {
         InitializeComponent();
 
+        ViewModel = viewModel;
+
         MyWebView.Source = Constants.AboutBlankUri;
 
-        ViewModel = new AppTabViewModel(tabId, index);
-
-        reactiveWebView = new(MyWebView, documentTitle, faviconUrl, url);
-        ViewModel.SetReactiveWebView(reactiveWebView);
+        reactiveWebView = new() { MyWebView = MyWebView };
+        ViewModel!.SetReactiveWebView(reactiveWebView);
 
         this.Bind(ViewModel, vm => vm.SearchBarText, v => v.SearchBar.Text).DisposeWith(Disposables);
 
@@ -83,7 +83,6 @@ public sealed partial class AppTab : ReactiveAppTab, IDisposable
     public void Dispose()
     {
         Disposables.Dispose();
-        ViewModel?.Dispose();
         reactiveWebView.Dispose();
     }
 }

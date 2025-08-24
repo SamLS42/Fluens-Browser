@@ -57,10 +57,10 @@ public class WindowsManager(ILocalSettingService localSettingService, TabPersist
         await dataService.ClearOpenTabsAsync();
     }
 
-    public Window? GetWindowForElement(UIElement element)
-    {
-        return ActiveWindows.FirstOrDefault(w => element.XamlRoot == w.Content.XamlRoot);
-    }
+    //public Window? GetWindowForElement(UIElement element)
+    //{
+    //    return ActiveWindows.FirstOrDefault(w => element.XamlRoot == w.Content.XamlRoot);
+    //}
 
     private List<Window> ActiveWindows { get; } = [];
 }

@@ -26,15 +26,15 @@ public class TabPersistencyService(IDbContextFactory<BrowserDbContext> dbContext
         return openTabs;
     }
 
-    public int CreateTab(Uri url)
+    public async Task<int> CreateTabAsync(Uri url)
     {
-        using BrowserDbContext dbContext = dbContextFactory.CreateDbContext();
+        await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync();
 
         BrowserTab entity = new() { Url = url.ToString() };
 
         dbContext.OpenTabs.Add(entity);
 
-        dbContext.SaveChanges();
+        await dbContext.SaveChangesAsync();
 
         return entity.Id;
     }
