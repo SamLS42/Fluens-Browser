@@ -6,8 +6,8 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using ReactiveUI;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Reactive;
-using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using Windows.Foundation.Collections;
@@ -15,9 +15,8 @@ using WinRT;
 
 namespace Fluens.UI.Views;
 
-public sealed partial class AppPage : ReactiveAppPage, IDisposable
+public sealed partial class AppPage : ReactiveAppPage
 {
-    private readonly CompositeDisposable disposables = [];
     public UIElement TitleBar => CustomDragRegion;
 
     private readonly Subject<Unit> hasNoTabs = new();
@@ -43,6 +42,15 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable
 
         Observable.FromEventPattern<TabView, TabViewTabCloseRequestedEventArgs>(tabView, nameof(tabView.TabCloseRequested))
             .Subscribe(async pattern => await RemoveTabAsync(pattern));
+
+        Observable.FromEventPattern<NotifyCollectionChangedEventArgs>(tabs, nameof(tabs.CollectionChanged))
+            .Subscribe(_ =>
+            {
+                if (tabs.Count == 0)
+                {
+                    hasNoTabs.OnNext(Unit.Default);
+                }
+            });
 
         Observable.FromEventPattern<TabView, IVectorChangedEventArgs>(tabView, nameof(tabView.TabItemsChanged))
             .Subscribe(ep => UpdateTabIndexes());
@@ -139,13 +147,6 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable
         {
             await AddBlankTabAsync();
         }
-    }
-
-    public void Dispose()
-    {
-        disposables.Dispose();
-        hasNoTabs.OnCompleted();
-        hasNoTabs.Dispose();
     }
 }
 
