@@ -20,8 +20,6 @@ public sealed partial class AppTab : ReactiveAppTab, IDisposable
 
         ViewModel = viewModel;
 
-        MyWebView.Source = Constants.AboutBlankUri;
-
         reactiveWebView = new() { MyWebView = MyWebView };
         ViewModel!.SetReactiveWebView(reactiveWebView);
 
@@ -60,7 +58,9 @@ public sealed partial class AppTab : ReactiveAppTab, IDisposable
 
             MyWebView.Focus(FocusState.Programmatic);
 
-            if (MyWebView.Source == Constants.AboutBlankUri && !string.IsNullOrWhiteSpace(SearchBar.Text))
+            if (MyWebView.Source is null &&
+                !string.IsNullOrWhiteSpace(SearchBar.Text) &&
+                Constants.AboutBlankUri.ToString() != SearchBar.Text)
             {
                 ViewModel?.NavigateToSearchBarInput.Execute().Subscribe();
             }
@@ -84,5 +84,6 @@ public sealed partial class AppTab : ReactiveAppTab, IDisposable
     {
         Disposables.Dispose();
         reactiveWebView.Dispose();
+        ViewModel?.Dispose();
     }
 }

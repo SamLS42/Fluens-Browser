@@ -38,8 +38,8 @@ public sealed partial class ReactiveWebView : IReactiveWebView
                 .Subscribe(DocumentTitle.OnNext)
                 .DisposeWith(Disposables);
 
-            Observable.FromEventPattern(MyWebView.CoreWebView2, nameof(MyWebView.CoreWebView2.NavigationStarting))
-                .Subscribe(_ =>
+            Observable.FromEventPattern<CoreWebView2, CoreWebView2NavigationStartingEventArgs>(MyWebView.CoreWebView2, nameof(MyWebView.CoreWebView2.NavigationStarting))
+                .Subscribe(ep =>
                 {
                     NavigationStarting.OnNext(Unit.Default);
                     FaviconUrl.OnNext(UIConstants.LoadingFaviconUri);
@@ -59,7 +59,7 @@ public sealed partial class ReactiveWebView : IReactiveWebView
                     {
                         NavigationCompleted.OnNext(Unit.Default);
 
-                        if (Url.Value == Constants.AboutBlankUri)
+                        if (MyWebView.Source == Constants.AboutBlankUri)
                         {
                             FaviconUrl.OnNext(string.Empty);
                         }

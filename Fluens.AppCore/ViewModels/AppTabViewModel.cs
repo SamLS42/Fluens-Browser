@@ -16,7 +16,7 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
 
     private IReactiveWebView ReactiveWebView { get; set; } = null!;
     public IObservable<string> DocumentTitle => ReactiveWebView.DocumentTitle.AsObservable();
-    public IObservable<string> FaviconUrl => ReactiveWebView.FaviconUrl.DistinctUntilChanged().AsObservable();
+    public IObservable<string> FaviconUrl => ReactiveWebView.FaviconUrl.AsObservable();
     public IObservable<bool> IsLoading => ReactiveWebView.IsLoading.AsObservable();
 
     public int Id { get; set; }
@@ -177,6 +177,9 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
 
     protected virtual void Dispose(bool dispose)
     {
-        ReactiveWebView.Dispose();
+        if (dispose)
+        {
+            ReactiveWebView.Dispose();
+        }
     }
 }

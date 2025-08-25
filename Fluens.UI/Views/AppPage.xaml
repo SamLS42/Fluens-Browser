@@ -14,7 +14,7 @@
             x:Name="tabView"
             VerticalAlignment="Stretch"
             Background="{ThemeResource SolidBackgroundFillColorSecondaryBrush}"
-            TabItemsSource="{x:Bind tabItems}">
+            TabItemsSource="{x:Bind tabs}">
             <TabView.TabStripHeader>
                 <Grid x:Name="ShellTitleBarInset" Background="Transparent" />
             </TabView.TabStripHeader>

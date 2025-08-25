@@ -14,11 +14,11 @@ public sealed partial class MainWindow : Window
         Observable.FromEventPattern<RoutedEventArgs>(Page, nameof(Page.Loaded))
             .Subscribe(ep => SetTitleBar(Page.TitleBar));
 
-        Page.ViewModel!.HasNoTabs.Subscribe(_ => Close());
+        Page.HasNoTabs.Subscribe(_ => Close());
     }
 
     internal async Task ApplyOnStartupSettingAsync(OnStartupSetting onStartupSetting)
     {
-        await Page.ViewModel!.ApplyOnStartupSettingAsync(onStartupSetting);
+        await Page.ApplyOnStartupSettingAsync(onStartupSetting);
     }
 }
