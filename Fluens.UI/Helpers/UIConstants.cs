@@ -9,4 +9,8 @@ internal class UIConstants
     internal const string NewTabTitle = "New Tab";
     internal static readonly FontIconSource LoadingPageIcon = new() { Glyph = "\uF16A" };
     internal const string LoadingFaviconUri = "LoadingIcon";
+
+    public UIConstants()
+    {
+    }
 }

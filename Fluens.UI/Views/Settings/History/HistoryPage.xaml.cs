@@ -1,4 +1,11 @@
+using DynamicData;
+using Fluens.AppCore.Helpers;
+using Fluens.AppCore.ViewModels.Settings.History;
 using Microsoft.UI.Xaml.Controls;
+using ReactiveUI;
+using System.Collections.ObjectModel;
+using System.Reactive.Disposables;
+using System.Reactive.Linq;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -6,27 +13,20 @@ using Microsoft.UI.Xaml.Controls;
 namespace Fluens.UI.Views.Settings.History;
 public sealed partial class HistoryPage : Page
 {
+    private CompositeDisposable disposables = [];
+    public HistoryPageViewModel? ViewModel { get; } = ServiceLocator.GetRequiredService<HistoryPageViewModel>();
+
+    private ReadOnlyObservableCollection<HistoryEntryView> historyEntries;
+
     public HistoryPage()
     {
         InitializeComponent();
 
-        EntryList.Items.Add(new HistoryEntryView(new()
-        {
-            LastVisitedOn = DateTime.Now.AddDays(-1),
-            DocumentTitle = " | An advanced, composable, reactive model-view-viewmodel framework ",
-            FaviconUrl = "https://www.reactiveui.net/images/favicons/favicon.ico",
-            Url = new Uri("https://www.reactiveui.net/docs/getting-started/"),
-            Host = "reactiveui.net"
-        }));
-
-        EntryList.Items.Add(new HistoryEntryView(new()
-        {
-            LastVisitedOn = DateTime.Now.AddDays(-1),
-            DocumentTitle = " | An advanced, composable, reactive model-view-viewmodel framework ",
-            FaviconUrl = "https://www.reactiveui.net/images/favicons/favicon.ico",
-            Url = new Uri("https://www.reactiveui.net/docs/getting-started/"),
-            Host = "reactiveui.net"
-        }));
+        ViewModel.Entries.Connect()
+            .Transform(vm => new HistoryEntryView() { ViewModel = vm })
+            .Bind(out historyEntries)
+            .Subscribe()
+            .DisposeWith(disposables);
     }
 
     private object LoadData()

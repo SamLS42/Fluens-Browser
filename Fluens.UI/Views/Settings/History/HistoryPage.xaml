@@ -11,5 +11,8 @@
     xmlns:vmhistory="using:Fluens.AppCore.ViewModels.Settings.History"
     mc:Ignorable="d">
 
-    <ListView x:Name="EntryList" SelectionMode="Multiple" />
+    <ListView
+        x:Name="EntryList"
+        ItemsSource="{x:Bind historyEntries}"
+        SelectionMode="Multiple" />
 </Page>

@@ -35,16 +35,14 @@ internal static class ImageSourceExtensions
     {
         public static ImageSource GetFromUrl(string faviconUrl)
         {
-            if (string.IsNullOrWhiteSpace(faviconUrl))
+            if (Uri.TryCreate(faviconUrl, UriKind.Absolute, out Uri? faviconUri))
             {
-                return UIConstants.EmptyBitmapImage;
+                return faviconUri.AbsolutePath.EndsWith(".svg", StringComparison.OrdinalIgnoreCase)
+                    ? new SvgImageSource(faviconUri)
+                    : new BitmapImage(faviconUri);
             }
 
-            Uri faviconUri = new(faviconUrl);
-
-            return faviconUri.AbsolutePath.EndsWith(".svg", StringComparison.OrdinalIgnoreCase)
-                ? new SvgImageSource(faviconUri)
-                : new BitmapImage(faviconUri);
+            return UIConstants.EmptyBitmapImage;
         }
     }
 }

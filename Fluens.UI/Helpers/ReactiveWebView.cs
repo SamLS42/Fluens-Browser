@@ -1,5 +1,6 @@
 ﻿using Fluens.AppCore.Contracts;
 using Fluens.AppCore.Helpers;
+using Fluens.UI.Helpers;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.Web.WebView2.Core;
 using System.Reactive;

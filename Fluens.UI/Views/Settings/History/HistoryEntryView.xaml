@@ -26,10 +26,24 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <HyperlinkButton x:Name="HyperlinkBtn">
-                <StackPanel Orientation="Horizontal">
-                    <ImageIcon x:Name="Favicon" Width="16" />
-                    <TextBlock x:Name="DocumentTitle" TextWrapping="NoWrap" />
-                </StackPanel>
+                <Grid ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <FontIcon
+                        Grid.Column="0"
+                        Glyph="&#xE909;"
+                        Visibility="{x:Bind Favicon.Source, Converter={StaticResource ImageSourceToVisibilityConverter}, Mode=OneWay}" />
+                    <ImageIcon
+                        x:Name="Favicon"
+                        Grid.Column="0"
+                        Width="16" />
+                    <TextBlock
+                        x:Name="DocumentTitle"
+                        Grid.Column="1"
+                        TextWrapping="NoWrap" />
+                </Grid>
             </HyperlinkButton>
             <TextBlock
                 x:Name="Host"

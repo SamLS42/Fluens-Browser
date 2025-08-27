@@ -15,14 +15,14 @@ using WinRT;
 
 namespace Fluens.UI.Views;
 
-public sealed partial class AppPage : ReactiveAppPage
+public sealed partial class AppPage : ReactiveAppPage, IDisposable
 {
     public UIElement TitleBar => CustomDragRegion;
 
     private readonly Subject<Unit> hasNoTabs = new();
     public IObservable<Unit> HasNoTabs => hasNoTabs.AsObservable();
 
-    private readonly ObservableCollection<TabViewItem> tabs = [];
+    private readonly ObservableCollection<TabViewItem> tabs = []; //For some reason, adding tabs is faster (visually) when using TabItemsSource instead of using Items directly
 
     public AppPage()
     {
@@ -147,6 +147,12 @@ public sealed partial class AppPage : ReactiveAppPage
         {
             await AddBlankTabAsync();
         }
+    }
+
+    public void Dispose()
+    {
+        hasNoTabs.OnCompleted();
+        hasNoTabs.Dispose();
     }
 }
 

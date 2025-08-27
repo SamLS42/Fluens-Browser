@@ -9,10 +9,9 @@ using System.Reactive.Disposables;
 namespace Fluens.UI.Views.Settings.History;
 public sealed partial class HistoryEntryView : ReactiveHistoryEntryView
 {
-    public HistoryEntryView(HistoryEntryViewModel viewModel)
+    public HistoryEntryView()
     {
         InitializeComponent();
-        ViewModel = viewModel;
 
         this.WhenActivated(d =>
         {
