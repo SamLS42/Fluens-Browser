@@ -90,7 +90,7 @@
                 BorderBrush="{StaticResource ContentDialogBorderThemeBrush}"
                 BorderThickness="{StaticResource ContentDialogBorderWidth}"
                 CornerRadius="{StaticResource OverlayCornerRadius}">
-                <settings:SettingsView />
+                <settings:SettingsView x:Name="SettingsView" />
             </Border>
         </Popup>
     </Grid>

@@ -2,6 +2,7 @@
 using Fluens.AppCore.Helpers;
 using Fluens.AppCore.Services;
 using Fluens.AppCore.ViewModels;
+using Fluens.AppCore.ViewModels.Settings;
 using Fluens.AppCore.ViewModels.Settings.History;
 using Fluens.AppCore.ViewModels.Settings.OnStartup;
 using Fluens.Data;
@@ -33,7 +34,8 @@ public partial class App : Application
             .AddTransient<AppPageViewModel>()
             .AddTransient<AppTabViewModel>()
             .AddSingleton<OnStartupConfigViewModel>()
-            .AddSingleton<HistoryPageViewModel>()
+            .AddTransient<HistoryPageViewModel>()
+            .AddTransient<SettingsViewModel>()
             .AddSingleton<WindowsManager>()
             .AddSingleton<TabPersistencyService>()
             .AddSingleton<HistoryService>()

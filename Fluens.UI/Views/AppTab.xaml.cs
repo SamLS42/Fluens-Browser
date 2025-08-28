@@ -1,3 +1,4 @@
+using DynamicData;
 using Fluens.AppCore.Helpers;
 using Fluens.AppCore.ViewModels;
 using Fluens.UI.Helpers;
@@ -68,8 +69,21 @@ public sealed partial class AppTab : ReactiveAppTab, IDisposable
             {
                 SearchBar.Focus(FocusState.Programmatic);
             }
-
         });
+
+        this.WhenAnyValue(x => x.SettingsView.ViewModel.HistoryPageViewModel)
+            .WhereNotNull()
+            .Select(vm => vm.Entries.Connect()
+                .MergeMany(entry => entry.OpenUrl.Select(_ => entry.Url))
+            )
+            .Switch()
+            .ObserveOn(RxApp.MainThreadScheduler)
+            .Subscribe(url =>
+            {
+                MyWebView.Source = url;
+                ViewModel!.SettingsDialogIsOpen = false;
+            })
+            .DisposeWith(Disposables);
     }
 
     private void DetectEnterKey(VirtualKey key)
@@ -77,6 +91,7 @@ public sealed partial class AppTab : ReactiveAppTab, IDisposable
         if (key == VirtualKey.Enter)
         {
             ViewModel?.NavigateToSearchBarInput.Execute().Subscribe();
+            MyWebView.Focus(FocusState.Programmatic);
         }
     }
 

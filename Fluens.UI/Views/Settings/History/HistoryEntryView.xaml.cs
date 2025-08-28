@@ -15,7 +15,7 @@ public sealed partial class HistoryEntryView : ReactiveHistoryEntryView
 
         this.WhenActivated(d =>
         {
-            this.OneWayBind(ViewModel, vm => vm.LastVisitedOn, v => v.Time.Text, p => p.ToShortDateString()).DisposeWith(d);
+            this.OneWayBind(ViewModel, vm => vm.LastVisitedOn, v => v.Time.Text, p => p.ToShortTimeString()).DisposeWith(d);
             this.OneWayBind(ViewModel, vm => vm.FaviconUrl, v => v.Favicon.Source, p => ImageSourceExtensions.GetFromUrl(p)).DisposeWith(d);
             this.OneWayBind(ViewModel, vm => vm.DocumentTitle, v => v.DocumentTitle.Text).DisposeWith(d);
             this.OneWayBind(ViewModel, vm => vm.Host, v => v.Host.Text).DisposeWith(d);

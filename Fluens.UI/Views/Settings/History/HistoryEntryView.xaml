@@ -25,7 +25,7 @@
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <HyperlinkButton x:Name="HyperlinkBtn">
+            <HyperlinkButton x:Name="HyperlinkBtn" ToolTipService.ToolTip="{x:Bind ViewModel.DocumentTitle}">
                 <Grid ColumnSpacing="8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />

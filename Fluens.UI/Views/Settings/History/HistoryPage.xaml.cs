@@ -1,36 +1,45 @@
 using DynamicData;
 using Fluens.AppCore.Helpers;
 using Fluens.AppCore.ViewModels.Settings.History;
-using Microsoft.UI.Xaml.Controls;
 using ReactiveUI;
 using System.Collections.ObjectModel;
 using System.Reactive.Disposables;
-using System.Reactive.Linq;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
 namespace Fluens.UI.Views.Settings.History;
-public sealed partial class HistoryPage : Page
+public sealed partial class HistoryPage : ReactiveHistoryPage, IDisposable
 {
-    private CompositeDisposable disposables = [];
-    public HistoryPageViewModel? ViewModel { get; } = ServiceLocator.GetRequiredService<HistoryPageViewModel>();
-
-    private ReadOnlyObservableCollection<HistoryEntryView> historyEntries;
+    private SourceList<GroupHistoryEntry> _historySource = new();
+    private ReadOnlyObservableCollection<GroupHistoryEntry> historyEntries;
 
     public HistoryPage()
     {
         InitializeComponent();
 
-        ViewModel.Entries.Connect()
-            .Transform(vm => new HistoryEntryView() { ViewModel = vm })
+        ViewModel ??= ServiceLocator.GetRequiredService<HistoryPageViewModel>();
+
+        _historySource.Connect()
             .Bind(out historyEntries)
-            .Subscribe()
-            .DisposeWith(disposables);
+            .Subscribe();
+
+        this.WhenActivated(disposables =>
+        {
+            ViewModel.Entries.Connect()
+                .Transform(vm => new HistoryEntryView() { ViewModel = vm })
+                .GroupOn(v => v.ViewModel!.LastVisitedOn.ToLongDateString())
+                .Transform(g => new GroupHistoryEntry(g.List.Items) { Key = g.GroupKey })
+                .PopulateInto(_historySource)
+                .DisposeWith(disposables);
+        });
+
     }
 
-    private object LoadData()
+    public void Dispose()
     {
-        throw new NotImplementedException();
+        _historySource.Dispose();
     }
 }
+
+public partial class ReactiveHistoryPage : ReactivePage<HistoryPageViewModel>;
