@@ -27,8 +27,13 @@
 
     <ScrollView>
         <StackPanel>
-            <CommandBar Closed="CommandBar_Closed" DefaultLabelPosition="Right">
+            <CommandBar x:Name="CommandBar">
                 <CommandBar.PrimaryCommands>
+                    <AppBarButton
+                        x:Name="DeleteSelectedBtn"
+                        Icon="Delete"
+                        Label="Delete selection" />
+                    <AppBarSeparator />
                     <AppBarButton
                         x:Name="SelectAllBtn"
                         Icon="SelectAll"
@@ -37,8 +42,6 @@
                         x:Name="UnSelectAllBtn"
                         Icon="ClearSelection"
                         Label="Clear selection" />
-                    <AppBarSeparator />
-                    <AppBarButton Icon="Delete" Label="Delete selection" />
                 </CommandBar.PrimaryCommands>
                 <CommandBar.SecondaryCommands>
                     <AppBarButton Icon="Delete" Label="Clear history" />

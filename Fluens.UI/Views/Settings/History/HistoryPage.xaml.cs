@@ -22,7 +22,7 @@ public sealed partial class HistoryPage : ReactiveHistoryPage, IDisposable
 
         ViewModel ??= ServiceLocator.GetRequiredService<HistoryPageViewModel>();
 
-        ViewModel.EntriesChanged.Subscribe(_ => RefreshListView())
+        ViewModel.EntriesChanges.Subscribe(_ => RefreshListView())
             .DisposeWith(_disposables);
 
         ViewModel.LoadHistoryCommand.Execute(UIConstants.HistoryPaginationSize).Subscribe();
@@ -30,7 +30,18 @@ public sealed partial class HistoryPage : ReactiveHistoryPage, IDisposable
         this.BindCommand(ViewModel, vm => vm.LoadHistoryCommand, v => v.LoadMoreBtn, withParameter: Observable.Return(UIConstants.HistoryPaginationSize))
             .DisposeWith(_disposables);
 
-        this.Bind(ViewModel, vm => vm.MoreAvailable, v => v.LoadMoreBtn.Visibility)
+        this.BindCommand(ViewModel, vm => vm.DeleteSelected, v => v.DeleteSelectedBtn)
+            .DisposeWith(_disposables);
+
+        ViewModel.DeleteSelected.CanExecute.Subscribe(canExecute => DeleteSelectedBtn.Visibility = canExecute ? Visibility.Visible : Visibility.Collapsed);
+
+        this.OneWayBind(ViewModel, vm => vm.MoreAvailable, v => v.LoadMoreBtn.Visibility)
+            .DisposeWith(_disposables);
+
+        this.OneWayBind(ViewModel, vm => vm.CanSelectAll, v => v.SelectAllBtn.Visibility)
+            .DisposeWith(_disposables);
+
+        this.OneWayBind(ViewModel, vm => vm.CanSelectAll, v => v.UnSelectAllBtn.Visibility, canSelectAll => canSelectAll ? Visibility.Collapsed : Visibility.Visible)
             .DisposeWith(_disposables);
 
         Observable.FromEventPattern(SelectAllBtn, nameof(SelectAllBtn.Click))
@@ -38,6 +49,17 @@ public sealed partial class HistoryPage : ReactiveHistoryPage, IDisposable
 
         Observable.FromEventPattern(UnSelectAllBtn, nameof(UnSelectAllBtn.Click))
             .Subscribe(_ => SelectUnSelectAll());
+
+        Observable.FromEventPattern(EntryList, nameof(EntryList.SelectionChanged))
+            .Subscribe(_ => UpdateSelection());
+
+        Observable.FromEventPattern(CommandBar, nameof(CommandBar.Closed))
+            .Subscribe(_ => EntryList.Items.FirstOrDefault()?.As<HistoryEntryView>().Focus(FocusState.Pointer)); //Retrieve focus from the commandBar
+    }
+
+    private void UpdateSelection()
+    {
+        ViewModel!.SelectedEntries = [.. EntryList.SelectedItems.Cast<HistoryEntryView>().Select(v => v.ViewModel!)];
     }
 
     private void RefreshListView()
@@ -70,11 +92,6 @@ public sealed partial class HistoryPage : ReactiveHistoryPage, IDisposable
         {
             EntryList.SelectAll();
         }
-    }
-
-    private void CommandBar_Closed(object sender, object e)
-    {
-        EntryList.Items.FirstOrDefault()?.As<HistoryEntryView>().Focus(FocusState.Pointer);
     }
 }
 

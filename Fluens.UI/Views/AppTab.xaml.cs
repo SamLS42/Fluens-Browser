@@ -5,7 +5,6 @@ using Fluens.UI.Helpers;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Input;
 using ReactiveUI;
-using System.Diagnostics;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using Windows.System;
@@ -85,19 +84,6 @@ public sealed partial class AppTab : ReactiveAppTab, IDisposable
                 ViewModel!.SettingsDialogIsOpen = false;
             })
             .DisposeWith(Disposables);
-
-        MyWebView.CoreWebView2.WebMessageReceived += MyWebView_KeyDown; ;
-        MyWebView.KeyUp += MyWebView_KeyUp; ;
-    }
-
-    private void MyWebView_KeyUp(object sender, KeyRoutedEventArgs e)
-    {
-        Debug.WriteLine("hi");
-    }
-
-    private void MyWebView_KeyDown(object sender, KeyRoutedEventArgs e)
-    {
-        Debug.WriteLine("hi");
     }
 
     private void DetectEnterKey(VirtualKey key)
