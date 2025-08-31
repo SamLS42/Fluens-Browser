@@ -5,6 +5,7 @@ using Fluens.UI.Helpers;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Input;
 using ReactiveUI;
+using System.Diagnostics;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using Windows.System;
@@ -26,7 +27,7 @@ public sealed partial class AppTab : ReactiveAppTab, IDisposable
 
         this.Bind(ViewModel, vm => vm.SearchBarText, v => v.SearchBar.Text).DisposeWith(Disposables);
 
-        this.OneWayBind(ViewModel, vm => vm.SettingsDialogIsOpen, v => v.SettingsDialog.IsOpen).DisposeWith(Disposables);
+        this.Bind(ViewModel, vm => vm.SettingsDialogIsOpen, v => v.SettingsPopup.IsOpen).DisposeWith(Disposables);
         this.OneWayBind(ViewModel, vm => vm.SettingsDialogIsOpen, v => v.ConfigBtn.IsChecked).DisposeWith(Disposables);
         this.OneWayBind(ViewModel, vm => vm.CanStop, v => v.StopBtn.Visibility).DisposeWith(Disposables);
         this.OneWayBind(ViewModel, vm => vm.CanRefresh, v => v.RefreshBtn.Visibility).DisposeWith(Disposables);
@@ -52,7 +53,7 @@ public sealed partial class AppTab : ReactiveAppTab, IDisposable
 
         this.WhenActivated(async d =>
         {
-            this.OneWayBind(ViewModel, vm => vm.SettingsDialogIsOpen, v => v.SettingsDialog.IsOpen).DisposeWith(d);
+            this.Bind(ViewModel, vm => vm.SettingsDialogIsOpen, v => v.SettingsPopup.IsOpen).DisposeWith(d);
             this.OneWayBind(ViewModel, vm => vm.SettingsDialogIsOpen, v => v.ConfigBtn.IsChecked).DisposeWith(d);
 
             await MyWebView.EnsureCoreWebView2Async();
@@ -84,6 +85,19 @@ public sealed partial class AppTab : ReactiveAppTab, IDisposable
                 ViewModel!.SettingsDialogIsOpen = false;
             })
             .DisposeWith(Disposables);
+
+        MyWebView.CoreWebView2.WebMessageReceived += MyWebView_KeyDown; ;
+        MyWebView.KeyUp += MyWebView_KeyUp; ;
+    }
+
+    private void MyWebView_KeyUp(object sender, KeyRoutedEventArgs e)
+    {
+        Debug.WriteLine("hi");
+    }
+
+    private void MyWebView_KeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        Debug.WriteLine("hi");
     }
 
     private void DetectEnterKey(VirtualKey key)

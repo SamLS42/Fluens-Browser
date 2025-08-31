@@ -1,18 +1,20 @@
 using DynamicData;
 using Fluens.AppCore.Helpers;
 using Fluens.AppCore.ViewModels.Settings.History;
+using Fluens.UI.Helpers;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Input;
 using ReactiveUI;
 using System.Collections.ObjectModel;
 using System.Reactive.Disposables;
-
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
+using System.Reactive.Linq;
+using WinRT;
 
 namespace Fluens.UI.Views.Settings.History;
 public sealed partial class HistoryPage : ReactiveHistoryPage, IDisposable
 {
-    private SourceList<GroupHistoryEntry> _historySource = new();
-    private ReadOnlyObservableCollection<GroupHistoryEntry> historyEntries;
+    private readonly CompositeDisposable _disposables = [];
+    private readonly ObservableCollection<GroupHistoryEntry> historyEntries = [];
 
     public HistoryPage()
     {
@@ -20,25 +22,59 @@ public sealed partial class HistoryPage : ReactiveHistoryPage, IDisposable
 
         ViewModel ??= ServiceLocator.GetRequiredService<HistoryPageViewModel>();
 
-        _historySource.Connect()
-            .Bind(out historyEntries)
-            .Subscribe();
+        ViewModel.EntriesChanged.Subscribe(_ => RefreshListView())
+            .DisposeWith(_disposables);
 
-        this.WhenActivated(disposables =>
-        {
-            ViewModel.Entries.Connect()
-                .Transform(vm => new HistoryEntryView() { ViewModel = vm })
-                .GroupOn(v => v.ViewModel!.LastVisitedOn.ToLongDateString())
-                .Transform(g => new GroupHistoryEntry(g.List.Items) { Key = g.GroupKey })
-                .PopulateInto(_historySource)
-                .DisposeWith(disposables);
-        });
+        ViewModel.LoadHistoryCommand.Execute(UIConstants.HistoryPaginationSize).Subscribe();
 
+        this.BindCommand(ViewModel, vm => vm.LoadHistoryCommand, v => v.LoadMoreBtn, withParameter: Observable.Return(UIConstants.HistoryPaginationSize))
+            .DisposeWith(_disposables);
+
+        this.Bind(ViewModel, vm => vm.MoreAvailable, v => v.LoadMoreBtn.Visibility)
+            .DisposeWith(_disposables);
+
+        Observable.FromEventPattern(SelectAllBtn, nameof(SelectAllBtn.Click))
+            .Subscribe(_ => SelectUnSelectAll());
+
+        Observable.FromEventPattern(UnSelectAllBtn, nameof(UnSelectAllBtn.Click))
+            .Subscribe(_ => SelectUnSelectAll());
+    }
+
+    private void RefreshListView()
+    {
+        historyEntries.Clear();
+
+        historyEntries.AddRange(ViewModel!.Entries.Items.Select(vm => new HistoryEntryView() { ViewModel = vm })
+            .GroupBy(v => v.ViewModel!.LastVisitedOn.ToLongDateString())
+            .Select(g => new GroupHistoryEntry(g) { Key = g.Key }));
     }
 
     public void Dispose()
     {
-        _historySource.Dispose();
+        _disposables.Dispose();
+    }
+
+    private void SelectAllKeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        SelectUnSelectAll();
+    }
+
+    private void SelectUnSelectAll()
+    {
+        if (EntryList.Items.All(EntryList.SelectedItems.Contains))
+        {
+            EntryList.SelectedItems.Clear();
+            UnSelectAllBtn.Visibility = Visibility.Collapsed;
+        }
+        else
+        {
+            EntryList.SelectAll();
+        }
+    }
+
+    private void CommandBar_Closed(object sender, object e)
+    {
+        EntryList.Items.FirstOrDefault()?.As<HistoryEntryView>().Focus(FocusState.Pointer);
     }
 }
 

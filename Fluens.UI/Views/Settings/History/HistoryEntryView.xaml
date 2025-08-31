@@ -33,6 +33,7 @@
                     </Grid.ColumnDefinitions>
                     <FontIcon
                         Grid.Column="0"
+                        Foreground="{ThemeResource TextFillColorPrimaryBrush}"
                         Glyph="&#xE909;"
                         Visibility="{x:Bind Favicon.Source, Converter={StaticResource ImageSourceToVisibilityConverter}, Mode=OneWay}" />
                     <ImageIcon

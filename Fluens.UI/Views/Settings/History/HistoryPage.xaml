@@ -18,28 +18,64 @@
             Source="{x:Bind historyEntries, Mode=OneWay}" />
     </history:ReactiveHistoryPage.Resources>
 
-    <ListView
-        x:Name="EntryList"
-        ItemsSource="{x:Bind ContactsCVS.View, Mode=OneWay}"
-        SelectionMode="Multiple">
-        <ListView.ItemsPanel>
-            <ItemsPanelTemplate>
-                <ItemsStackPanel AreStickyGroupHeadersEnabled="True" />
-            </ItemsPanelTemplate>
-        </ListView.ItemsPanel>
-        <ListView.GroupStyle>
-            <GroupStyle>
-                <GroupStyle.HeaderTemplate>
-                    <DataTemplate x:DataType="history:GroupHistoryEntry">
-                        <Border AutomationProperties.AccessibilityView="Raw">
-                            <TextBlock
-                                AutomationProperties.AccessibilityView="Raw"
-                                Style="{ThemeResource TitleTextBlockStyle}"
-                                Text="{x:Bind Key}" />
-                        </Border>
-                    </DataTemplate>
-                </GroupStyle.HeaderTemplate>
-            </GroupStyle>
-        </ListView.GroupStyle>
-    </ListView>
+    <history:ReactiveHistoryPage.KeyboardAccelerators>
+        <KeyboardAccelerator
+            Key="A"
+            Invoked="SelectAllKeyboardAccelerator_Invoked"
+            Modifiers="Control" />
+    </history:ReactiveHistoryPage.KeyboardAccelerators>
+
+    <ScrollView>
+        <StackPanel>
+            <CommandBar Closed="CommandBar_Closed" DefaultLabelPosition="Right">
+                <CommandBar.PrimaryCommands>
+                    <AppBarButton
+                        x:Name="SelectAllBtn"
+                        Icon="SelectAll"
+                        Label="Select all" />
+                    <AppBarButton
+                        x:Name="UnSelectAllBtn"
+                        Icon="ClearSelection"
+                        Label="Clear selection" />
+                    <AppBarSeparator />
+                    <AppBarButton Icon="Delete" Label="Delete selection" />
+                </CommandBar.PrimaryCommands>
+                <CommandBar.SecondaryCommands>
+                    <AppBarButton Icon="Delete" Label="Clear history" />
+                </CommandBar.SecondaryCommands>
+            </CommandBar>
+            <ListView
+                x:Name="EntryList"
+                ItemsSource="{x:Bind ContactsCVS.View, Mode=OneWay}"
+                SelectionMode="Multiple">
+                <ListView.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <ItemsStackPanel AreStickyGroupHeadersEnabled="True" />
+                    </ItemsPanelTemplate>
+                </ListView.ItemsPanel>
+                <ListView.GroupStyle>
+                    <GroupStyle>
+                        <GroupStyle.HeaderTemplate>
+                            <DataTemplate x:DataType="history:GroupHistoryEntry">
+                                <Border AutomationProperties.AccessibilityView="Raw">
+                                    <TextBlock
+                                        AutomationProperties.AccessibilityView="Raw"
+                                        Style="{ThemeResource TitleTextBlockStyle}"
+                                        Text="{x:Bind Key}" />
+                                </Border>
+                            </DataTemplate>
+                        </GroupStyle.HeaderTemplate>
+                    </GroupStyle>
+                </ListView.GroupStyle>
+            </ListView>
+            <Button
+                x:Name="LoadMoreBtn"
+                HorizontalAlignment="Stretch"
+                Background="Transparent"
+                BorderBrush="Transparent"
+                Style="{StaticResource DefaultButtonStyle}">
+                <FontIcon Glyph="&#xE712;" />
+            </Button>
+        </StackPanel>
+    </ScrollView>
 </history:ReactiveHistoryPage>
