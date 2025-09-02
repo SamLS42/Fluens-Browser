@@ -1,6 +1,7 @@
 ﻿using Fluens.AppCore.Contracts;
 using Fluens.AppCore.Enums;
 using Fluens.AppCore.Services;
+using Fluens.AppCore.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
 using System.Reactive.Linq;
@@ -8,9 +9,9 @@ using System.Reactive.Linq;
 
 namespace Fluens.UI.Services;
 
-public class WindowsManager(ILocalSettingService localSettingService, TabPersistencyService dataService)
+public class WindowsManager(ILocalSettingService localSettingService, TabPersistencyService dataService) : IWindowsManager
 {
-    public MainWindow CreateWindow()
+    public IMainWindow CreateWindow()
     {
         MainWindow newWindow = new()
         {
@@ -20,16 +21,7 @@ public class WindowsManager(ILocalSettingService localSettingService, TabPersist
         return newWindow;
     }
 
-    public MainWindow CreateUnTrackedWindow()
-    {
-        MainWindow newWindow = new()
-        {
-            SystemBackdrop = new MicaBackdrop()
-        };
-        return newWindow;
-    }
-
-    public void TrackWindow(Window window)
+    private void TrackWindow(MainWindow window)
     {
         Observable.FromEventPattern<object, WindowEventArgs>(window, nameof(window.Closed))
            .Subscribe(ep =>
@@ -43,7 +35,7 @@ public class WindowsManager(ILocalSettingService localSettingService, TabPersist
                        {
                            if (onStartupSetting == OnStartupSetting.OpenNewTab)
                            {
-                               await ClearOpenTabsAsync();
+                               await dataService.ClearOpenTabsAsync();
                            }
                        });
                }
@@ -52,15 +44,19 @@ public class WindowsManager(ILocalSettingService localSettingService, TabPersist
         ActiveWindows.Add(window);
     }
 
-    private async Task ClearOpenTabsAsync()
-    {
-        await dataService.ClearOpenTabsAsync();
-    }
-
-    //public Window? GetWindowForElement(UIElement element)
+    //public MainWindow? GetWindowForElement(UIElement element)
     //{
     //    return ActiveWindows.FirstOrDefault(w => element.XamlRoot == w.Content.XamlRoot);
     //}
 
-    private List<Window> ActiveWindows { get; } = [];
+    public ITabView GetParentTabView(AppTabViewModel tab)
+    {
+        MainWindow? window = ActiveWindows.SingleOrDefault(window => window.TabView.HasTab(tab));
+
+        return window != null
+            ? window.TabView
+            : throw new NotSupportedException("All tabs must have an active parent ITabView and MainWindow");
+    }
+
+    private List<MainWindow> ActiveWindows { get; } = [];
 }

@@ -1,28 +1,36 @@
+using DynamicData;
+using Fluens.AppCore.Contracts;
 using Fluens.AppCore.Enums;
 using Fluens.AppCore.Helpers;
 using Fluens.AppCore.ViewModels;
 using Fluens.UI.Helpers;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using ReactiveUI;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Reactive;
+using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using Windows.Foundation.Collections;
+using Windows.System;
 using WinRT;
 
 namespace Fluens.UI.Views;
 
-public sealed partial class AppPage : ReactiveAppPage, IDisposable
+public sealed partial class AppPage : ReactiveAppPage, IDisposable, ITabView
 {
+    readonly CompositeDisposable disposables = [];
     public UIElement TitleBar => CustomDragRegion;
 
     private readonly Subject<Unit> hasNoTabs = new();
     public IObservable<Unit> HasNoTabs => hasNoTabs.AsObservable();
 
     private readonly ObservableCollection<TabViewItem> tabs = []; //For some reason, adding tabs is faster (visually) when using TabItemsSource instead of using Items directly
+    private readonly SourceCache<TabViewItem, int> tabsSource = new(tvi => tvi.ViewModel.Id);
+
 
     public AppPage()
     {
@@ -31,7 +39,7 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable
         ViewModel ??= ServiceLocator.GetRequiredService<AppPageViewModel>();
 
         Observable.FromEventPattern<TabView, object>(tabView, nameof(tabView.AddTabButtonClick))
-            .Subscribe(async _ => await AddBlankTabAsync());
+            .Subscribe(async _ => await AddTabAsync());
 
         Observable.FromEventPattern<SelectionChangedEventArgs>(tabView, nameof(tabView.SelectionChanged))
             .Subscribe(ep =>
@@ -41,7 +49,7 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable
             });
 
         Observable.FromEventPattern<TabView, TabViewTabCloseRequestedEventArgs>(tabView, nameof(tabView.TabCloseRequested))
-            .Subscribe(async pattern => await RemoveTabAsync(pattern));
+            .Subscribe(async pattern => await CloseTabAsync(pattern.EventArgs.Tab));
 
         Observable.FromEventPattern<NotifyCollectionChangedEventArgs>(tabs, nameof(tabs.CollectionChanged))
             .Subscribe(_ =>
@@ -50,22 +58,41 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable
                 {
                     hasNoTabs.OnNext(Unit.Default);
                 }
+
+                tabsSource.EditDiff(tabs, TabViewItemComparer.Instance);
             });
 
         Observable.FromEventPattern<TabView, IVectorChangedEventArgs>(tabView, nameof(tabView.TabItemsChanged))
             .Subscribe(ep => UpdateTabIndexes());
+
+        tabsSource.Connect()
+            .MergeMany(tabView => tabView.ViewModel.KeyboardShortcuts)
+            .Subscribe(async s => await HandleKeyboardShortcutAsync(s))
+            .DisposeWith(disposables);
     }
 
-    private async Task AddBlankTabAsync()
+    private async Task HandleKeyboardShortcutAsync(ShortcutMessage message)
     {
-        int id = await ViewModel!.GetNewTabId();
-        AppTabViewModel vm = new(id, Constants.AboutBlankUri);
-        AddTabViewItem(vm);
+        switch (message)
+        {
+            case { Ctrl: true, Key: "T" }:
+                await AddTabAsync();
+                break;
+            case { Ctrl: true, Key: "W" }:
+                await CloseTabAsync(tabView.SelectedItem.As<TabViewItem>());
+                break;
+        }
     }
 
-    private void AddTabViewItem(AppTabViewModel vm)
+    public async Task AddTabAsync(Uri? uri = null, bool isSelected = true, bool activate = false)
     {
-        TabViewItem tabViewItem = CreateTabItem(vm);
+        AppTabViewModel vm = await ViewModel!.CreateTabAsync(uri, isSelected);
+        await AddTabViewItemAsync(vm, activate);
+    }
+
+    private async Task AddTabViewItemAsync(AppTabViewModel vm, bool activate = false)
+    {
+        TabViewItem tabViewItem = await CreateTabItemAsync(vm, activate);
         tabs.Add(tabViewItem);
         if (vm.IsSelected)
         {
@@ -73,7 +100,7 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable
         }
     }
 
-    private TabViewItem CreateTabItem(AppTabViewModel vm)
+    private async Task<TabViewItem> CreateTabItemAsync(AppTabViewModel vm, bool activate = false)
     {
         AppTab appTab = new(vm);
 
@@ -85,16 +112,20 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable
         };
 
         vm.FaviconUrl.Subscribe(faviconUrl => newTab.IconSource = IconSource.GetFromUrl(faviconUrl));
-        vm.DocumentTitle.Subscribe(title => newTab.Header = GetCorrectTitle(title));
+        vm.DocumentTitle.Subscribe(title =>
+        {
+            newTab.Header = string.IsNullOrWhiteSpace(title)
+                || title.Equals(Constants.AboutBlankUri.ToString(), StringComparison.Ordinal)
+                ? UIConstants.NewTabTitle
+                : title;
+        });
+
+        if (activate)
+        {
+            await appTab.ActivateAsync();
+        }
 
         return newTab;
-    }
-
-    private static string GetCorrectTitle(string? title)
-    {
-        return string.IsNullOrWhiteSpace(title) || title.Equals(Constants.AboutBlankUri.ToString(), StringComparison.Ordinal)
-            ? UIConstants.NewTabTitle
-            : title;
     }
 
     private void UpdateTabIndexes()
@@ -107,12 +138,24 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable
         }
     }
 
-    private async Task RemoveTabAsync(EventPattern<TabView, TabViewTabCloseRequestedEventArgs> pattern)
+    private async Task CloseTabAsync(TabViewItem tabView)
     {
-        AppTab tab = pattern.EventArgs.Tab.Content.As<AppTab>();
-        tabs.Remove(pattern.EventArgs.Tab);
+        AppTab tab = tabView.AppTab;
+        tabs.Remove(tabView);
         await ViewModel!.DeleteTabAsync(tab.ViewModel!);
         tab.Dispose();
+    }
+
+    private void KeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        ShortcutMessage shortcutMessage = new()
+        {
+            Key = args.KeyboardAccelerator.Key.ToString().ToUpperInvariant(),
+            Ctrl = args.KeyboardAccelerator.Modifiers is VirtualKeyModifiers.Control,
+            Shift = args.KeyboardAccelerator.Modifiers is VirtualKeyModifiers.Shift,
+        };
+
+        Observable.FromAsync(_ => HandleKeyboardShortcutAsync(shortcutMessage)).Subscribe();
     }
 
     public async Task ApplyOnStartupSettingAsync(OnStartupSetting onStartupSetting)
@@ -120,37 +163,44 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable
         switch (onStartupSetting)
         {
             case OnStartupSetting.OpenNewTab:
-                await AddBlankTabAsync();
+                await AddTabAsync();
                 break;
             case OnStartupSetting.RestoreOpenTabs:
-                foreach (AppTabViewModel vm in await ViewModel!.GetOpenTabsAsync())
+                foreach (AppTabViewModel vm in await ViewModel!.RecoverTabsAsync())
                 {
-                    AddTabViewItem(vm);
+                    await AddTabViewItemAsync(vm);
                 }
                 break;
             //TODO
             //case OnStartupSetting.OpenSpecificTabs:
             //    break;
             case OnStartupSetting.RestoreAndOpenNewTab:
-                foreach (AppTabViewModel vm in await ViewModel!.GetOpenTabsAsync())
+                foreach (AppTabViewModel vm in await ViewModel!.RecoverTabsAsync())
                 {
-                    AddTabViewItem(vm);
+                    await AddTabViewItemAsync(vm);
                 }
-                await AddBlankTabAsync();
+                await AddTabAsync();
                 break;
             default:
-                await AddBlankTabAsync();
+                await AddTabAsync();
                 break;
         }
 
         if (tabs.Count == 0)
         {
-            await AddBlankTabAsync();
+            await AddTabAsync();
         }
+    }
+
+    public bool HasTab(AppTabViewModel tab)
+    {
+        return tabs.Any(t => t.ViewModel == tab);
     }
 
     public void Dispose()
     {
+        tabsSource.Dispose();
+        disposables.Dispose();
         hasNoTabs.OnCompleted();
         hasNoTabs.Dispose();
     }

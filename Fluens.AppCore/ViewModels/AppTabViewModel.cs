@@ -5,6 +5,7 @@ using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using System.Reactive;
 using System.Reactive.Linq;
+using System.Reactive.Subjects;
 
 namespace Fluens.AppCore.ViewModels;
 public partial class AppTabViewModel : ReactiveObject, IDisposable
@@ -18,6 +19,8 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
     public IObservable<string> DocumentTitle => ReactiveWebView.DocumentTitle.AsObservable();
     public IObservable<string> FaviconUrl => ReactiveWebView.FaviconUrl.AsObservable();
     public IObservable<bool> IsLoading => ReactiveWebView.IsLoading.AsObservable();
+    public IObservable<ShortcutMessage> KeyboardShortcuts => KeyboardShortcutsSource.AsObservable();
+    private Subject<ShortcutMessage> KeyboardShortcutsSource { get; } = new();
 
     public int Id { get; set; }
 
@@ -51,8 +54,9 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
 
     private TabPersistencyService DataService { get; } = ServiceLocator.GetRequiredService<TabPersistencyService>();
     private HistoryService HistoryService { get; } = ServiceLocator.GetRequiredService<HistoryService>();
+    private IWindowsManager WindowsManager { get; } = ServiceLocator.GetRequiredService<IWindowsManager>();
 
-    public AppTabViewModel(int id, Uri uri, bool isSelected = true, int index = -1, string? documentTitle = null, string? faviconUrl = null)
+    public AppTabViewModel(int id, Uri uri, bool isSelected, int index = -1, string? documentTitle = null, string? faviconUrl = null)
     {
         Id = id;
         Index = index;
@@ -83,7 +87,7 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
 
     private async Task UpdateHistoryAsync(CancellationToken cancellationToken = default)
     {
-        await HistoryService.AddEntryAsync(ReactiveWebView.Url.Value, ReactiveWebView.FaviconUrl.Value, ReactiveWebView.DocumentTitle.Value, cancellationToken);
+        await HistoryService.AddEntryAsync(await ReactiveWebView.Url.Take(1), await ReactiveWebView.FaviconUrl.Take(1), await ReactiveWebView.DocumentTitle.Take(1), cancellationToken);
     }
 
     public void SetReactiveWebView(IReactiveWebView reactiveWebView)
@@ -103,8 +107,18 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
 
         ReactiveWebView.NavigationCompleted
             .Merge(ReactiveWebView.FaviconUrl.Where(faviconUrl => !string.IsNullOrWhiteSpace(faviconUrl)).Select(_ => Unit.Default))
-            .Throttle(TimeSpan.FromSeconds(1))
             .Subscribe(async _ => await UpdateHistoryAsync());
+
+        ReactiveWebView.OpenNewTab
+            .Subscribe(async uri => await WindowsManager.GetParentTabView(this).AddTabAsync(uri, isSelected: false, activate: true));
+
+        ReactiveWebView.KeyboardShortcuts
+            .Subscribe(KeyboardShortcutsSource.OnNext);
+    }
+
+    public void ShortcutMessageInvoked(ShortcutMessage shortcutMessage)
+    {
+        KeyboardShortcutsSource.OnNext(shortcutMessage);
     }
 
     private void NavigateToSearchBarInputImpl()

@@ -21,7 +21,7 @@ public sealed partial class AppTab : ReactiveAppTab, IDisposable
 
         ViewModel = viewModel;
 
-        reactiveWebView = new() { MyWebView = MyWebView };
+        reactiveWebView = new() { MyWebView = WebView };
         ViewModel!.SetReactiveWebView(reactiveWebView);
 
         this.Bind(ViewModel, vm => vm.SearchBarText, v => v.SearchBar.Text).DisposeWith(Disposables);
@@ -43,32 +43,16 @@ public sealed partial class AppTab : ReactiveAppTab, IDisposable
         Observable.FromEventPattern<RoutedEventArgs>(SearchBar, nameof(SearchBar.GotFocus))
             .Subscribe(_ => SearchBar.SelectAll());
 
-        Observable.FromEventPattern<SizeChangedEventArgs>(MyWebView, nameof(MyWebView.SizeChanged))
+        Observable.FromEventPattern<SizeChangedEventArgs>(WebView, nameof(WebView.SizeChanged))
             .Subscribe(ep =>
             {
-                SettingsDialogContent.Width = MyWebView.ActualWidth - (2 * SettingsDialogContent.Margin.Left);
-                SettingsDialogContent.Height = MyWebView.ActualHeight - (2 * SettingsDialogContent.Margin.Top);
+                SettingsDialogContent.Width = WebView.ActualWidth - (2 * SettingsDialogContent.Margin.Left);
+                SettingsDialogContent.Height = WebView.ActualHeight - (2 * SettingsDialogContent.Margin.Top);
             });
 
         this.WhenActivated(async d =>
         {
-            this.Bind(ViewModel, vm => vm.SettingsDialogIsOpen, v => v.SettingsPopup.IsOpen).DisposeWith(d);
-            this.OneWayBind(ViewModel, vm => vm.SettingsDialogIsOpen, v => v.ConfigBtn.IsChecked).DisposeWith(d);
-
-            await MyWebView.EnsureCoreWebView2Async();
-
-            MyWebView.Focus(FocusState.Programmatic);
-
-            if (MyWebView.Source is null &&
-                !string.IsNullOrWhiteSpace(SearchBar.Text) &&
-                Constants.AboutBlankUri.ToString() != SearchBar.Text)
-            {
-                ViewModel?.NavigateToSearchBarInput.Execute().Subscribe();
-            }
-            else if (MyWebView.Source == Constants.AboutBlankUri)
-            {
-                SearchBar.Focus(FocusState.Programmatic);
-            }
+            await ActivateAsync();
         });
 
         this.WhenAnyValue(x => x.SettingsView.ViewModel.HistoryPageViewModel)
@@ -80,10 +64,28 @@ public sealed partial class AppTab : ReactiveAppTab, IDisposable
             .ObserveOn(RxApp.MainThreadScheduler)
             .Subscribe(url =>
             {
-                MyWebView.Source = url;
+                WebView.Source = url;
                 ViewModel!.SettingsDialogIsOpen = false;
             })
             .DisposeWith(Disposables);
+    }
+
+    public async Task ActivateAsync()
+    {
+        await WebView.EnsureCoreWebView2Async();
+
+        WebView.Focus(FocusState.Programmatic);
+
+        if (WebView.Source is null &&
+            !string.IsNullOrWhiteSpace(SearchBar.Text) &&
+            Constants.AboutBlankUri.ToString() != SearchBar.Text)
+        {
+            ViewModel?.NavigateToSearchBarInput.Execute().Subscribe();
+        }
+        else if (WebView.Source == Constants.AboutBlankUri)
+        {
+            SearchBar.Focus(FocusState.Programmatic);
+        }
     }
 
     private void DetectEnterKey(VirtualKey key)
@@ -91,7 +93,7 @@ public sealed partial class AppTab : ReactiveAppTab, IDisposable
         if (key == VirtualKey.Enter)
         {
             ViewModel?.NavigateToSearchBarInput.Execute().Subscribe();
-            MyWebView.Focus(FocusState.Programmatic);
+            WebView.Focus(FocusState.Programmatic);
         }
     }
 
@@ -100,5 +102,17 @@ public sealed partial class AppTab : ReactiveAppTab, IDisposable
         Disposables.Dispose();
         reactiveWebView.Dispose();
         ViewModel?.Dispose();
+    }
+
+    private void KeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        ShortcutMessage shortcutMessage = new()
+        {
+            Key = VirtualKey.W.ToString().ToUpperInvariant(),
+            Ctrl = args.KeyboardAccelerator.Modifiers is VirtualKeyModifiers.Control,
+            Shift = args.KeyboardAccelerator.Modifiers is VirtualKeyModifiers.Shift,
+        };
+
+        ViewModel!.ShortcutMessageInvoked(shortcutMessage);
     }
 }

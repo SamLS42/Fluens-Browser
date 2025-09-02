@@ -10,5 +10,6 @@ internal static class TabViewItemExtensions
     extension(TabViewItem tvi)
     {
         public AppTabViewModel ViewModel => tvi.Content.As<AppTab>().ViewModel!;
+        public AppTab AppTab => tvi.Content.As<AppTab>();
     }
 }

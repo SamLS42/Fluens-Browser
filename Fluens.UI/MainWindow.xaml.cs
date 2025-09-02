@@ -1,11 +1,14 @@
+using Fluens.AppCore.Contracts;
 using Fluens.AppCore.Enums;
 using Microsoft.UI.Xaml;
 using System.Reactive.Linq;
 
 namespace Fluens.UI;
 
-public sealed partial class MainWindow : Window
+public sealed partial class MainWindow : Window, IMainWindow
 {
+    public ITabView TabView => Page;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -17,7 +20,7 @@ public sealed partial class MainWindow : Window
         Page.HasNoTabs.Subscribe(_ => Close());
     }
 
-    internal async Task ApplyOnStartupSettingAsync(OnStartupSetting onStartupSetting)
+    public async Task ApplyOnStartupSettingAsync(OnStartupSetting onStartupSetting)
     {
         await Page.ApplyOnStartupSettingAsync(onStartupSetting);
     }

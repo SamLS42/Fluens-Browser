@@ -44,13 +44,13 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <Button x:Name="GoBackBtn" IsEnabled="{x:Bind MyWebView.CanGoBack, Mode=OneWay}">
+                <Button x:Name="GoBackBtn" IsEnabled="{x:Bind WebView.CanGoBack, Mode=OneWay}">
                     <FontIcon Glyph="&#xE72B;" />
                 </Button>
                 <Button
                     x:Name="GoForwardBtn"
                     Grid.Column="1"
-                    IsEnabled="{x:Bind MyWebView.CanGoForward, Mode=OneWay}">
+                    IsEnabled="{x:Bind WebView.CanGoForward, Mode=OneWay}">
                     <FontIcon Glyph="&#xE72A;" />
                 </Button>
                 <Button
@@ -74,9 +74,21 @@
             </Grid>
 
             <WebView2
-                x:Name="MyWebView"
+                x:Name="WebView"
                 Grid.Row="1"
-                DefaultBackgroundColor="{StaticResource SolidBackgroundFillColorTertiary}" />
+                DefaultBackgroundColor="{StaticResource SolidBackgroundFillColorTertiary}">
+
+                <WebView2.KeyboardAccelerators>
+                    <KeyboardAccelerator
+                        Key="W"
+                        Invoked="KeyboardAccelerator_Invoked"
+                        Modifiers="Control" />
+                    <KeyboardAccelerator
+                        Key="T"
+                        Invoked="KeyboardAccelerator_Invoked"
+                        Modifiers="Control" />
+                </WebView2.KeyboardAccelerators>
+            </WebView2>
 
         </Grid>
         <Popup

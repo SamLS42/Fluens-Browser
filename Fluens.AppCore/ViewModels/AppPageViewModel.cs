@@ -6,7 +6,7 @@ using System.Reactive.Linq;
 namespace Fluens.AppCore.ViewModels;
 public class AppPageViewModel(TabPersistencyService dataService)
 {
-    public async Task<AppTabViewModel[]> GetOpenTabsAsync()
+    public async Task<AppTabViewModel[]> RecoverTabsAsync()
     {
         BrowserTab[] tabs = await dataService.GetOpenTabsAsync();
 
@@ -21,5 +21,12 @@ public class AppPageViewModel(TabPersistencyService dataService)
     public async Task DeleteTabAsync(AppTabViewModel tab)
     {
         await dataService.DeleteTabAsync(tab.Id);
+    }
+
+    public async Task<AppTabViewModel> CreateTabAsync(Uri? uri = null, bool isSelected = true)
+    {
+        int id = await GetNewTabId();
+        AppTabViewModel vm = new(id, uri ?? Constants.AboutBlankUri, isSelected);
+        return vm;
     }
 }

@@ -9,14 +9,18 @@ using Fluens.Data;
 using Fluens.UI.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
 using ReactiveUI;
 using System.Reactive.Linq;
+using WinRT;
 
 namespace Fluens.UI;
 
 public partial class App : Application
 {
+    private IHost _host = null!;
     private MainWindow _window = null!;
 
     public App()
@@ -25,39 +29,46 @@ public partial class App : Application
 
         PlatformRegistrationManager.SetRegistrationNamespaces(RegistrationNamespace.WinUI);
 
-        RegisterServices();
-    }
-
-    private static void RegisterServices()
-    {
-        IServiceCollection serviceCollection = new ServiceCollection()
-            .AddTransient<AppPageViewModel>()
-            .AddTransient<AppTabViewModel>()
-            .AddSingleton<OnStartupConfigViewModel>()
-            .AddTransient<HistoryPageViewModel>()
-            .AddTransient<SettingsViewModel>()
-            .AddSingleton<WindowsManager>()
-            .AddSingleton<TabPersistencyService>()
-            .AddSingleton<HistoryService>()
-            .AddSingleton<ILocalSettingService, LocalSettingService>()
-            .AddPooledDbContextFactory<BrowserDbContext>(opts =>
+        _host = Host.CreateDefaultBuilder()
+            .ConfigureServices((context, services) =>
             {
-                opts.UseSqlite("Data Source=BrowserStorage.db");
-            });
+                // Logging
+                services.AddLogging(builder =>
+                {
+                    builder.AddDebug(); // shows in Debug output
+                    builder.SetMinimumLevel(LogLevel.Information);
+                });
 
-        ServiceLocator.SetLocator(serviceCollection.BuildServiceProvider());
+                services.AddTransient<AppPageViewModel>()
+                    .AddTransient<AppTabViewModel>()
+                    .AddSingleton<OnStartupConfigViewModel>()
+                    .AddTransient<HistoryPageViewModel>()
+                    .AddTransient<SettingsViewModel>()
+                    .AddSingleton<IWindowsManager, WindowsManager>()
+                    .AddSingleton<TabPersistencyService>()
+                    .AddSingleton<HistoryService>()
+                    .AddSingleton<ILocalSettingService, LocalSettingService>()
+                    .AddPooledDbContextFactory<BrowserDbContext>(opts =>
+                    {
+                        opts.UseSqlite("Data Source=BrowserStorage.db");
+                    });
+            })
+            .Build();
 
 
+        ServiceLocator.SetLocator(_host.Services);
     }
 
-    protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
+    protected override async void OnLaunched(LaunchActivatedEventArgs args)
     {
+        await _host.StartAsync();
+
         IDbContextFactory<BrowserDbContext> dbContextFactory = ServiceLocator.GetRequiredService<IDbContextFactory<BrowserDbContext>>();
         using BrowserDbContext dbContext = dbContextFactory.CreateDbContext();
 
         dbContext.Database.Migrate();
 
-        _window = ServiceLocator.GetRequiredService<WindowsManager>().CreateWindow();
+        _window = ServiceLocator.GetRequiredService<IWindowsManager>().CreateWindow().As<MainWindow>();
 
         //TODO: Save and recover window state (maximized, size, etc.)
         //_window.AppWindow.Presenter.As<OverlappedPresenter>().Maximize();

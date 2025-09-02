@@ -4,9 +4,9 @@ namespace Fluens.AppCore.Helpers;
 
 public static class ServiceLocator
 {
-    private static ServiceProvider ServiceProvider { get; set; } = null!;
+    private static IServiceProvider ServiceProvider { get; set; } = null!;
 
-    public static void SetLocator(ServiceProvider serviceProvider)
+    public static void SetLocator(IServiceProvider serviceProvider)
     {
         ServiceProvider = serviceProvider;
     }

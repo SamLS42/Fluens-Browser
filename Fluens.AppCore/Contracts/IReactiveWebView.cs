@@ -1,15 +1,17 @@
-﻿using System.Reactive;
-using System.Reactive.Subjects;
+﻿using Fluens.AppCore.Helpers;
+using System.Reactive;
 
 namespace Fluens.AppCore.Contracts;
 public interface IReactiveWebView : IDisposable
 {
-    BehaviorSubject<string> DocumentTitle { get; }
-    BehaviorSubject<string> FaviconUrl { get; }
-    Subject<Unit> NavigationCompleted { get; }
-    Subject<Unit> NavigationStarting { get; }
-    BehaviorSubject<bool> IsLoading { get; }
-    BehaviorSubject<Uri> Url { get; }
+    IObservable<string> DocumentTitle { get; }
+    IObservable<string> FaviconUrl { get; }
+    IObservable<Unit> NavigationCompleted { get; }
+    IObservable<Unit> NavigationStarting { get; }
+    IObservable<bool> IsLoading { get; }
+    IObservable<Uri> Url { get; }
+    IObservable<Uri> OpenNewTab { get; }
+    IObservable<ShortcutMessage> KeyboardShortcuts { get; }
     void GoBack();
     void GoForward();
     void StopNavigation();
