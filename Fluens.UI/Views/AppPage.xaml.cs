@@ -4,6 +4,7 @@ using Fluens.AppCore.Enums;
 using Fluens.AppCore.Helpers;
 using Fluens.AppCore.ViewModels;
 using Fluens.UI.Helpers;
+using Fluens.UI.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -20,7 +21,7 @@ using WinRT;
 
 namespace Fluens.UI.Views;
 
-public sealed partial class AppPage : ReactiveAppPage, IDisposable, ITabView
+public sealed partial class AppPage : ReactiveAppPage, IDisposable, ITabPage
 {
     readonly CompositeDisposable disposables = [];
     public UIElement TitleBar => CustomDragRegion;
@@ -31,6 +32,7 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable, ITabView
     private readonly ObservableCollection<TabViewItem> tabs = []; //For some reason, adding tabs is faster (visually) when using TabItemsSource instead of using Items directly
     private readonly SourceCache<TabViewItem, int> tabsSource = new(tvi => tvi.ViewModel.Id);
 
+    private WindowsManager WindowsManager { get; } = ServiceLocator.GetRequiredService<WindowsManager>();
 
     public AppPage()
     {
@@ -187,6 +189,8 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable, ITabView
 
     public async Task ApplyOnStartupSettingAsync(OnStartupSetting onStartupSetting)
     {
+        ViewModel!.WindowId = WindowsManager.GetParentWindowId(this);
+
         switch (onStartupSetting)
         {
             case OnStartupSetting.OpenNewTab:

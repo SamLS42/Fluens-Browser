@@ -6,11 +6,12 @@ using System.Reactive.Linq;
 namespace Fluens.AppCore.ViewModels;
 public class AppPageViewModel(TabPersistencyService dataService)
 {
+    public int WindowId { get; set; }
     public async Task<AppTabViewModel[]> RecoverTabsAsync()
     {
         BrowserTab[] tabs = await dataService.GetOpenTabsAsync();
 
-        return [.. tabs.Select(item => new AppTabViewModel(item.Id, new Uri(item.Url), item.IsTabSelected, item.Index, item.DocumentTitle, item.FaviconUrl))];
+        return [.. tabs.Select(item => new AppTabViewModel(item.Id, new Uri(item.Url), item.IsSelected, WindowId, item.Index, item.DocumentTitle, item.FaviconUrl))];
     }
 
     public async Task<AppTabViewModel?> RecoverTabAsync()
@@ -22,12 +23,12 @@ public class AppPageViewModel(TabPersistencyService dataService)
             return null;
         }
 
-        return new AppTabViewModel(tab.Id, new Uri(tab.Url), tab.IsTabSelected, tab.Index, tab.DocumentTitle, tab.FaviconUrl);
+        return new AppTabViewModel(tab.Id, new Uri(tab.Url), tab.IsSelected, WindowId, tab.Index, tab.DocumentTitle, tab.FaviconUrl);
     }
 
     public async Task<int> GetNewTabId()
     {
-        return await dataService.CreateTabAsync(Constants.AboutBlankUri);
+        return await dataService.CreateTabAsync(Constants.AboutBlankUri, WindowId);
     }
 
     public async Task CloseTabAsync(int id)
@@ -38,7 +39,7 @@ public class AppPageViewModel(TabPersistencyService dataService)
     public async Task<AppTabViewModel> CreateTabAsync(Uri? uri = null, bool isSelected = true)
     {
         int id = await GetNewTabId();
-        AppTabViewModel vm = new(id, uri ?? Constants.AboutBlankUri, isSelected);
+        AppTabViewModel vm = new(id, uri ?? Constants.AboutBlankUri, isSelected, WindowId);
         return vm;
     }
 }

@@ -27,11 +27,11 @@ public class TabPersistencyService(IDbContextFactory<BrowserDbContext> dbContext
         return openTabs;
     }
 
-    public async Task<int> CreateTabAsync(Uri url)
+    public async Task<int> CreateTabAsync(Uri url, int windowId)
     {
         await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync();
 
-        BrowserTab entity = new() { Url = url.ToString() };
+        BrowserTab entity = new() { Url = url.ToString(), BrowserWindowId = windowId };
 
         dbContext.Tabs.Add(entity);
 
@@ -64,7 +64,7 @@ public class TabPersistencyService(IDbContextFactory<BrowserDbContext> dbContext
 
         await dbContext.Tabs
             .Where(t => t.Id == id)
-            .ExecuteUpdateAsync(u => u.SetProperty(t => t.IsTabSelected, isTabSelected));
+            .ExecuteUpdateAsync(u => u.SetProperty(t => t.IsSelected, isTabSelected));
     }
 
     public async Task SaveTabFaviconUrlAsync(int id, string faviconUrl)
@@ -83,6 +83,15 @@ public class TabPersistencyService(IDbContextFactory<BrowserDbContext> dbContext
         await dbContext.Tabs
             .Where(t => t.Id == id)
             .ExecuteUpdateAsync(u => u.SetProperty(t => t.DocumentTitle, documentTitle));
+    }
+
+    public async Task SetWindowAsync(int id, int windowId)
+    {
+        await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync();
+
+        await dbContext.Tabs
+            .Where(t => t.Id == id)
+            .ExecuteUpdateAsync(u => u.SetProperty(t => t.BrowserWindowId, windowId));
     }
 
     public async Task DeleteTabAsync(int id)

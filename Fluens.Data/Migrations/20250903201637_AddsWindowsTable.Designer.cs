@@ -3,6 +3,7 @@ using System;
 using Fluens.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Fluens.Data.Migrations
 {
     [DbContext(typeof(BrowserDbContext))]
-    partial class BrowserDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250903201637_AddsWindowsTable")]
+    partial class AddsWindowsTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.7");
@@ -49,7 +52,7 @@ namespace Fluens.Data.Migrations
 
                     b.HasIndex("BrowserWindowId");
 
-                    b.ToTable("Tabs", (string)null);
+                    b.ToTable("Tabs");
                 });
 
             modelBuilder.Entity("Fluens.Data.Entities.BrowserWindow", b =>
@@ -78,7 +81,7 @@ namespace Fluens.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("BrowserWindows", (string)null);
+                    b.ToTable("BrowserWindows");
                 });
 
             modelBuilder.Entity("Fluens.Data.Entities.HistoryEntry", b =>
@@ -111,7 +114,7 @@ namespace Fluens.Data.Migrations
                     b.HasIndex("Url")
                         .IsUnique();
 
-                    b.ToTable("History", (string)null);
+                    b.ToTable("History");
                 });
 
             modelBuilder.Entity("Fluens.Data.Entities.BrowserTab", b =>

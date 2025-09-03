@@ -6,4 +6,5 @@ public class BrowserDbContext(DbContextOptions<BrowserDbContext> options) : DbCo
 {
     public DbSet<BrowserTab> Tabs { get; set; }
     public DbSet<HistoryEntry> History { get; set; }
+    public DbSet<BrowserWindow> BrowserWindows { get; set; }
 }

@@ -11,6 +11,7 @@ public class BrowserTab
     public string? FaviconUrl { get; set; }
     public string? DocumentTitle { get; set; }
     public DateTime? ClosedOn { get; set; }
-
-    public bool IsTabSelected { get; set; }
+    public bool IsSelected { get; set; }
+    public int? BrowserWindowId { get; set; }
+    public BrowserWindow? BrowserWindow { get; set; } = null!;
 }

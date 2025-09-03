@@ -76,19 +76,7 @@
             <WebView2
                 x:Name="WebView"
                 Grid.Row="1"
-                DefaultBackgroundColor="{StaticResource SolidBackgroundFillColorTertiary}">
-
-                <WebView2.KeyboardAccelerators>
-                    <KeyboardAccelerator
-                        Key="W"
-                        Invoked="KeyboardAccelerator_Invoked"
-                        Modifiers="Control" />
-                    <KeyboardAccelerator
-                        Key="T"
-                        Invoked="KeyboardAccelerator_Invoked"
-                        Modifiers="Control" />
-                </WebView2.KeyboardAccelerators>
-            </WebView2>
+                DefaultBackgroundColor="{StaticResource SolidBackgroundFillColorTertiary}" />
 
         </Grid>
         <Popup

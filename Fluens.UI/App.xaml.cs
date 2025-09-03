@@ -1,4 +1,5 @@
 ﻿using Fluens.AppCore.Contracts;
+using Fluens.AppCore.Enums;
 using Fluens.AppCore.Helpers;
 using Fluens.AppCore.Services;
 using Fluens.AppCore.ViewModels;
@@ -6,22 +7,23 @@ using Fluens.AppCore.ViewModels.Settings;
 using Fluens.AppCore.ViewModels.Settings.History;
 using Fluens.AppCore.ViewModels.Settings.OnStartup;
 using Fluens.Data;
+using Fluens.Data.Entities;
 using Fluens.UI.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using ReactiveUI;
 using System.Reactive.Linq;
-using WinRT;
+using Windows.Graphics;
 
 namespace Fluens.UI;
 
 public partial class App : Application
 {
     private IHost _host = null!;
-    private MainWindow _window = null!;
 
     public App()
     {
@@ -40,12 +42,13 @@ public partial class App : Application
                 });
 
                 services.AddTransient<AppPageViewModel>()
-                    .AddTransient<AppTabViewModel>()
                     .AddSingleton<OnStartupConfigViewModel>()
                     .AddTransient<HistoryPageViewModel>()
                     .AddTransient<SettingsViewModel>()
-                    .AddSingleton<IWindowsManager, WindowsManager>()
+                    .AddSingleton<WindowsManager>()
+                    .AddSingleton<ITabPageManager, TabViewsManager>()
                     .AddSingleton<TabPersistencyService>()
+                    .AddSingleton<BrowserWindowService>()
                     .AddSingleton<HistoryService>()
                     .AddSingleton<ILocalSettingService, LocalSettingService>()
                     .AddPooledDbContextFactory<BrowserDbContext>(opts =>
@@ -63,23 +66,49 @@ public partial class App : Application
     {
         await _host.StartAsync();
 
+        await ApplyDbMigrations();
+
+        MainWindow window = ServiceLocator.GetRequiredService<WindowsManager>().CreateWindow();
+        await ApplyOnStartupSetting(window);
+        window.Activate();
+    }
+
+    private static async Task ApplyDbMigrations()
+    {
         IDbContextFactory<BrowserDbContext> dbContextFactory = ServiceLocator.GetRequiredService<IDbContextFactory<BrowserDbContext>>();
-        using BrowserDbContext dbContext = dbContextFactory.CreateDbContext();
+        await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync();
+        await dbContext.Database.MigrateAsync();
+    }
 
-        dbContext.Database.Migrate();
-
-        _window = ServiceLocator.GetRequiredService<IWindowsManager>().CreateWindow().As<MainWindow>();
-
-        //TODO: Save and recover window state (maximized, size, etc.)
-        //_window.AppWindow.Presenter.As<OverlappedPresenter>().Maximize();
-
+    private async Task ApplyOnStartupSetting(MainWindow window)
+    {
         ILocalSettingService localSetting = ServiceLocator.GetRequiredService<ILocalSettingService>();
+        OnStartupSetting onStartupSetting = await localSetting.OnStartupSettingChanges.Take(1);
 
-        localSetting.OnStartupSettingChanges.Take(1)
-            .Subscribe(async onStartupSetting =>
+        if (onStartupSetting is OnStartupSetting.RestoreOpenTabs or OnStartupSetting.RestoreAndOpenNewTab)
+        {
+            BrowserWindowService browserWindowService = ServiceLocator.GetRequiredService<BrowserWindowService>();
+            BrowserWindow? lastWindow = await browserWindowService.GetLastWindowAsync();
+            if (lastWindow is not null)
             {
-                await _window.ApplyOnStartupSettingAsync(onStartupSetting);
-                _window.Activate();
-            });
+                window.ViewModel = new() { Id = lastWindow.Id };
+                AppWindow appWindow = window.AppWindow;
+
+                appWindow.Move(new PointInt32(lastWindow.X, lastWindow.Y));
+                appWindow.Resize(new SizeInt32(lastWindow.Width, lastWindow.Height));
+
+                if (lastWindow.IsMaximized && appWindow.Presenter is OverlappedPresenter presenter)
+                {
+                    presenter.Maximize();
+                }
+            }
+            else
+            {
+                int newWindowId = await browserWindowService.CreateWindowAsync();
+                window.ViewModel = new() { Id = newWindowId };
+            }
+        }
+
+        await window.ApplyOnStartupSettingAsync(onStartupSetting);
     }
 }
