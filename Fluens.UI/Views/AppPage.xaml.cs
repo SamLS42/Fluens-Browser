@@ -75,6 +75,9 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable, ITabView
     {
         switch (message)
         {
+            case { Ctrl: true, Shift: true, Key: "T" }:
+                await RestoreClosedTabAsync();
+                break;
             case { Ctrl: true, Key: "T" }:
                 await AddTabAsync();
                 break;
@@ -82,6 +85,20 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable, ITabView
                 await CloseTabAsync(tabView.SelectedItem.As<TabViewItem>());
                 break;
         }
+    }
+
+    private async Task RestoreClosedTabAsync()
+    {
+        AppTabViewModel? vm = await ViewModel!.RecoverTabAsync();
+
+        if (vm is null)
+        {
+            return;
+        }
+
+        vm.IsSelected = true;
+
+        await AddTabViewItemAsync(vm, activate: true);
     }
 
     public async Task AddTabAsync(Uri? uri = null, bool isSelected = true, bool activate = false)
@@ -93,7 +110,17 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable, ITabView
     private async Task AddTabViewItemAsync(AppTabViewModel vm, bool activate = false)
     {
         TabViewItem tabViewItem = await CreateTabItemAsync(vm, activate);
-        tabs.Add(tabViewItem);
+
+        if (vm.Index != null)
+        {
+            tabs.Insert(vm.Index.Value, tabViewItem);
+        }
+        else
+        {
+            tabs.Add(tabViewItem);
+        }
+
+
         if (vm.IsSelected)
         {
             tabView.SelectedItem = tabViewItem;
@@ -142,7 +169,7 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable, ITabView
     {
         AppTab tab = tabView.AppTab;
         tabs.Remove(tabView);
-        await ViewModel!.DeleteTabAsync(tab.ViewModel!);
+        await ViewModel!.CloseTabAsync(tab.ViewModel!.Id);
         tab.Dispose();
     }
 

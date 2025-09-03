@@ -9,7 +9,8 @@ public class TabPersistencyService(IDbContextFactory<BrowserDbContext> dbContext
     {
         await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync();
 
-        BrowserTab[] openTabs = await dbContext.OpenTabs
+        BrowserTab[] openTabs = await dbContext.Tabs
+            .Where(t => t.ClosedOn == null)
             .OrderBy(t => t.Index)
             .AsNoTracking()
             .ToArrayAsync();
@@ -21,7 +22,7 @@ public class TabPersistencyService(IDbContextFactory<BrowserDbContext> dbContext
     {
         using BrowserDbContext dbContext = dbContextFactory.CreateDbContext();
 
-        BrowserTab[] openTabs = [.. dbContext.OpenTabs.OrderBy(t => t.Index).AsNoTracking()];
+        BrowserTab[] openTabs = [.. dbContext.Tabs.OrderBy(t => t.Index).AsNoTracking()];
 
         return openTabs;
     }
@@ -32,7 +33,7 @@ public class TabPersistencyService(IDbContextFactory<BrowserDbContext> dbContext
 
         BrowserTab entity = new() { Url = url.ToString() };
 
-        dbContext.OpenTabs.Add(entity);
+        dbContext.Tabs.Add(entity);
 
         await dbContext.SaveChangesAsync();
 
@@ -43,7 +44,7 @@ public class TabPersistencyService(IDbContextFactory<BrowserDbContext> dbContext
     {
         await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync();
 
-        await dbContext.OpenTabs
+        await dbContext.Tabs
             .Where(t => t.Id == id)
             .ExecuteUpdateAsync(u => u.SetProperty(t => t.Index, index));
     }
@@ -52,7 +53,7 @@ public class TabPersistencyService(IDbContextFactory<BrowserDbContext> dbContext
     {
         await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync();
 
-        await dbContext.OpenTabs
+        await dbContext.Tabs
             .Where(t => t.Id == id)
             .ExecuteUpdateAsync(u => u.SetProperty(t => t.Url, url.ToString()));
     }
@@ -61,7 +62,7 @@ public class TabPersistencyService(IDbContextFactory<BrowserDbContext> dbContext
     {
         await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync();
 
-        await dbContext.OpenTabs
+        await dbContext.Tabs
             .Where(t => t.Id == id)
             .ExecuteUpdateAsync(u => u.SetProperty(t => t.IsTabSelected, isTabSelected));
     }
@@ -70,7 +71,7 @@ public class TabPersistencyService(IDbContextFactory<BrowserDbContext> dbContext
     {
         await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync();
 
-        await dbContext.OpenTabs
+        await dbContext.Tabs
             .Where(t => t.Id == id)
             .ExecuteUpdateAsync(u => u.SetProperty(t => t.FaviconUrl, faviconUrl));
     }
@@ -79,7 +80,7 @@ public class TabPersistencyService(IDbContextFactory<BrowserDbContext> dbContext
     {
         await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync();
 
-        await dbContext.OpenTabs
+        await dbContext.Tabs
             .Where(t => t.Id == id)
             .ExecuteUpdateAsync(u => u.SetProperty(t => t.DocumentTitle, documentTitle));
     }
@@ -88,13 +89,40 @@ public class TabPersistencyService(IDbContextFactory<BrowserDbContext> dbContext
     {
         await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync();
 
-        await dbContext.OpenTabs.Where(t => t.Id == id).ExecuteDeleteAsync();
+        await dbContext.Tabs.Where(t => t.Id == id).ExecuteDeleteAsync();
     }
 
-    public async Task ClearOpenTabsAsync()
+    public async Task ClearTabsAsync()
     {
         await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync();
 
-        await dbContext.OpenTabs.ExecuteDeleteAsync();
+        await dbContext.Tabs.ExecuteDeleteAsync();
+    }
+
+    public async Task CloseTabAsync(int id)
+    {
+        await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync();
+
+        await dbContext.Tabs.Where(t => t.Id == id)
+            .ExecuteUpdateAsync(setPropertyCalls => setPropertyCalls.SetProperty(t => t.ClosedOn, DateTime.UtcNow));
+    }
+
+    public async Task<BrowserTab?> GetClosedTabAsync()
+    {
+        await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync();
+
+        BrowserTab? tab = await dbContext.Tabs
+            .Where(t => t.ClosedOn != null)
+            .OrderByDescending(t => t.ClosedOn)
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
+
+        if (tab != null)
+        {
+            await dbContext.Tabs.Where(t => t.Id == tab.Id)
+                .ExecuteUpdateAsync(setPropertyCalls => setPropertyCalls.SetProperty(t => t.ClosedOn, (DateTime?)null));
+        }
+
+        return tab;
     }
 }

@@ -121,17 +121,27 @@ public sealed partial class ReactiveWebView : IReactiveWebView
     private async Task AddShortcutListenersAsync()
     {
         string script = @"
-                        window.addEventListener('keydown', function(e) {
-                            if (e.ctrlKey && e.key === 't') {
-                                e.preventDefault();
-                                window.chrome.webview.postMessage({ key: 'T', ctrl: true });
-                            }
-                            if (e.ctrlKey && e.key === 'w') {
-                                e.preventDefault();
-                                window.chrome.webview.postMessage({ key: 'W', ctrl: true });
-                            }
-                        });
-                    ";
+window.addEventListener('keydown', function (e) {
+  const combo = `${e.code}|ctrl:${e.ctrlKey }|shift:${e.shiftKey}`;
+  switch (combo) {
+    case 'KeyT|ctrl:true|shift:true':
+      e.preventDefault();
+      window.chrome.webview.postMessage({ key: 'T', ctrl: true, shift: true });
+      break;
+
+    case 'KeyT|ctrl:true|shift:false':
+      e.preventDefault();
+      window.chrome.webview.postMessage({ key: 'T', ctrl: true, shift: false });
+      break;
+
+    case 'KeyW|ctrl:true|shift:false':
+    case 'KeyW|ctrl:true|shift:true': // handle with same action or split if needed
+      e.preventDefault();
+      window.chrome.webview.postMessage({ key: 'W', ctrl: true, shift: e.shiftKey });
+      break;
+  }
+});
+";
 
         await MyWebView.CoreWebView2.ExecuteScriptAsync(script);
     }

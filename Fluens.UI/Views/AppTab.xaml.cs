@@ -82,7 +82,7 @@ public sealed partial class AppTab : ReactiveAppTab, IDisposable
         {
             ViewModel?.NavigateToSearchBarInput.Execute().Subscribe();
         }
-        else if (WebView.Source == Constants.AboutBlankUri)
+        else if (ViewModel!.Url == Constants.AboutBlankUri)
         {
             SearchBar.Focus(FocusState.Programmatic);
         }

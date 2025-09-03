@@ -56,7 +56,7 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
     private HistoryService HistoryService { get; } = ServiceLocator.GetRequiredService<HistoryService>();
     private IWindowsManager WindowsManager { get; } = ServiceLocator.GetRequiredService<IWindowsManager>();
 
-    public AppTabViewModel(int id, Uri uri, bool isSelected, int index = -1, string? documentTitle = null, string? faviconUrl = null)
+    public AppTabViewModel(int id, Uri uri, bool isSelected, int? index = null, string? documentTitle = null, string? faviconUrl = null)
     {
         Id = id;
         Index = index;

@@ -33,9 +33,9 @@ public class WindowsManager(ILocalSettingService localSettingService, TabPersist
                    localSettingService.OnStartupSettingChanges.Take(1)
                        .Subscribe(async onStartupSetting =>
                        {
-                           if (onStartupSetting == OnStartupSetting.OpenNewTab)
+                           if (onStartupSetting is not OnStartupSetting.RestoreOpenTabs and not OnStartupSetting.RestoreAndOpenNewTab)
                            {
-                               await dataService.ClearOpenTabsAsync();
+                               await dataService.ClearTabsAsync();
                            }
                        });
                }
