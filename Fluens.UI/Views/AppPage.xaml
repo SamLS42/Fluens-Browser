@@ -10,16 +10,6 @@
     mc:Ignorable="d">
 
     <Grid>
-        <Grid.KeyboardAccelerators>
-            <KeyboardAccelerator
-                Key="W"
-                Invoked="KeyboardAccelerator_Invoked"
-                Modifiers="Control" />
-            <KeyboardAccelerator
-                Key="T"
-                Invoked="KeyboardAccelerator_Invoked"
-                Modifiers="Control" />
-        </Grid.KeyboardAccelerators>
         <TabView
             x:Name="tabView"
             VerticalAlignment="Stretch"
@@ -34,6 +24,20 @@
                     MinWidth="188"
                     Background="Transparent" />
             </TabView.TabStripFooter>
+            <TabView.KeyboardAccelerators>
+                <KeyboardAccelerator
+                    Key="W"
+                    Invoked="KeyboardAccelerator_Invoked"
+                    Modifiers="Control" />
+                <KeyboardAccelerator
+                    Key="T"
+                    Invoked="KeyboardAccelerator_Invoked"
+                    Modifiers="Control" />
+                <KeyboardAccelerator
+                    Key="T"
+                    Invoked="KeyboardAccelerator_Invoked"
+                    Modifiers="Control,Shift" />
+            </TabView.KeyboardAccelerators>
         </TabView>
     </Grid>
 

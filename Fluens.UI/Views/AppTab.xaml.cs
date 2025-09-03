@@ -103,16 +103,4 @@ public sealed partial class AppTab : ReactiveAppTab, IDisposable
         reactiveWebView.Dispose();
         ViewModel?.Dispose();
     }
-
-    private void KeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
-    {
-        ShortcutMessage shortcutMessage = new()
-        {
-            Key = VirtualKey.W.ToString().ToUpperInvariant(),
-            Ctrl = args.KeyboardAccelerator.Modifiers is VirtualKeyModifiers.Control,
-            Shift = args.KeyboardAccelerator.Modifiers is VirtualKeyModifiers.Shift,
-        };
-
-        ViewModel!.ShortcutMessageInvoked(shortcutMessage);
-    }
 }

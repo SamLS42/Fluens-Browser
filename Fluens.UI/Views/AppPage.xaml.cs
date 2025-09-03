@@ -175,18 +175,6 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable, ITabPage
         tab.Dispose();
     }
 
-    private void KeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
-    {
-        ShortcutMessage shortcutMessage = new()
-        {
-            Key = args.KeyboardAccelerator.Key.ToString().ToUpperInvariant(),
-            Ctrl = args.KeyboardAccelerator.Modifiers is VirtualKeyModifiers.Control,
-            Shift = args.KeyboardAccelerator.Modifiers is VirtualKeyModifiers.Shift,
-        };
-
-        Observable.FromAsync(_ => HandleKeyboardShortcutAsync(shortcutMessage)).Subscribe();
-    }
-
     public async Task ApplyOnStartupSettingAsync(OnStartupSetting onStartupSetting)
     {
         ViewModel!.WindowId = WindowsManager.GetParentWindowId(this);
@@ -234,6 +222,20 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable, ITabPage
         disposables.Dispose();
         hasNoTabs.OnCompleted();
         hasNoTabs.Dispose();
+    }
+
+    private void KeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        ShortcutMessage shortcutMessage = new()
+        {
+            Key = args.KeyboardAccelerator.Key.ToString().ToUpperInvariant(),
+            Ctrl = args.KeyboardAccelerator.Modifiers.HasFlag(VirtualKeyModifiers.Control),
+            Shift = args.KeyboardAccelerator.Modifiers.HasFlag(VirtualKeyModifiers.Shift),
+        };
+
+        Observable.FromAsync(_ => HandleKeyboardShortcutAsync(shortcutMessage)).Subscribe();
+
+        args.Handled = true;
     }
 }
 
