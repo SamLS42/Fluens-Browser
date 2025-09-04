@@ -47,11 +47,12 @@
 		<PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.2.250402" />
 		<PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.4948" />
 		<PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.250814004-preview" />
-		<PackageReference Include="ReactiveUI.SourceGenerators" Version="2.3.1">
+		<PackageReference Include="ReactiveUI.SourceGenerators" Version="2.4.1">
 		  <PrivateAssets>all</PrivateAssets>
 		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="ReactiveUI.WinUI" Version="20.4.1" />
+		<PackageReference Include="ReactiveUI.WinUI" Version="21.0.1" />
+		<PackageReference Include="Vanara.PInvoke.User32" Version="4.2.0" />
 	</ItemGroup>
 	<ItemGroup>
 	  <ProjectReference Include="..\Fluens.AppCore\Fluens.AppCore.csproj" />

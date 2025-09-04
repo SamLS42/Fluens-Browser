@@ -3,11 +3,11 @@ using Fluens.AppCore.Enums;
 using Fluens.AppCore.Services;
 using Fluens.AppCore.ViewModels;
 using Fluens.UI.Views;
-using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
 using System.Reactive.Linq;
-
+using Vanara.PInvoke;
+using WinRT.Interop;
 
 namespace Fluens.UI.Services;
 
@@ -30,17 +30,52 @@ public class WindowsManager(ILocalSettingService localSettingService, TabPersist
            {
                ActiveWindows.Remove(window);
 
-               AppWindow appWindow = window.AppWindow;
+               // 1. Get the window's native handle (HWND)
+               HWND hwnd = new(WindowNative.GetWindowHandle(window));
 
-               int id = window.ViewModel!.Id;
-               int x = appWindow.Position.X;
-               int y = appWindow.Position.Y;
-               int width = appWindow.Size.Width;
-               int height = appWindow.Size.Height;
-               bool isMaximized = appWindow.Presenter.Kind == AppWindowPresenterKind.Overlapped &&
-                    ((OverlappedPresenter)appWindow.Presenter).State == OverlappedPresenterState.Maximized;
+               // We'll populate these variables based on the window state
+               int x, y, width, height;
+               bool isMaximized = false;
 
-               await browserWindowService.SaveWindowStateAsync(id, x, y, width, height, isMaximized);
+               // 2. Get the placement to check if the window is maximized
+               User32.WINDOWPLACEMENT placement = new();
+               if (User32.GetWindowPlacement(hwnd, ref placement))
+               {
+                   if (placement.showCmd == ShowWindowCommand.SW_SHOWMAXIMIZED)
+                   {
+                       // STATE: MAXIMIZED
+                       // Save the underlying "normal" position for when the user restores.
+                       isMaximized = true;
+                       RECT normalRect = placement.rcNormalPosition;
+                       x = normalRect.X;
+                       y = normalRect.Y;
+                       width = normalRect.Width;
+                       height = normalRect.Height;
+                   }
+                   else
+                   {
+                       // STATE: NORMAL or SNAPPED
+                       // Get the window's *actual current* screen coordinates.
+                       // This will correctly capture the size and position of a snapped window.
+                       if (User32.GetWindowRect(hwnd, out RECT currentRect))
+                       {
+                           x = currentRect.X;
+                           y = currentRect.Y;
+                           width = currentRect.Width;
+                           height = currentRect.Height;
+                       }
+                       else
+                       {
+                           // Fallback or error handling if GetWindowRect fails
+                           // For now, we can just return and not save.
+                           return;
+                       }
+                   }
+
+                   // 3. Save the determined state
+                   int id = window.ViewModel!.Id;
+                   await browserWindowService.SaveWindowStateAsync(id, x, y, width, height, isMaximized);
+               }
 
                if (ActiveWindows.Count == 0)
                {
