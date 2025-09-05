@@ -2,28 +2,27 @@
 
 #nullable disable
 
-namespace Fluens.Data.Migrations
+namespace Fluens.Data.Migrations;
+
+/// <inheritdoc />
+public partial class IsTabSelectedField : Migration
 {
     /// <inheritdoc />
-    public partial class IsTabSelectedField : Migration
+    protected override void Up(MigrationBuilder migrationBuilder)
     {
-        /// <inheritdoc />
-        protected override void Up(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.AddColumn<bool>(
-                name: "IsTabSelected",
-                table: "OpenTabs",
-                type: "INTEGER",
-                nullable: false,
-                defaultValue: false);
-        }
+        migrationBuilder.AddColumn<bool>(
+            name: "IsTabSelected",
+            table: "OpenTabs",
+            type: "INTEGER",
+            nullable: false,
+            defaultValue: false);
+    }
 
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.DropColumn(
-                name: "IsTabSelected",
-                table: "OpenTabs");
-        }
+    /// <inheritdoc />
+    protected override void Down(MigrationBuilder migrationBuilder)
+    {
+        migrationBuilder.DropColumn(
+            name: "IsTabSelected",
+            table: "OpenTabs");
     }
 }

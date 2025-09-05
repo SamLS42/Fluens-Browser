@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml.Controls;
 using WinRT;
 
 namespace Fluens.UI.Helpers;
+
 internal static class TabViewItemExtensions
 {
     extension(TabViewItem tvi)

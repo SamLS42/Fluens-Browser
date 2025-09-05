@@ -10,6 +10,7 @@ using System.Reactive.Linq;
 using Windows.System;
 
 namespace Fluens.UI.Views;
+
 public partial class ReactiveAppTab : ReactiveUserControl<AppTabViewModel>;
 public sealed partial class AppTab : ReactiveAppTab, IDisposable
 {
@@ -23,6 +24,12 @@ public sealed partial class AppTab : ReactiveAppTab, IDisposable
 
         reactiveWebView = new() { MyWebView = WebView };
         ViewModel!.SetReactiveWebView(reactiveWebView);
+
+        ViewModel.NavigationCompleted
+            .Subscribe(_ => WebView.Focus(FocusState.Programmatic))
+            .DisposeWith(Disposables);
+
+        WebView.CoreWebView2.
 
         this.Bind(ViewModel, vm => vm.SearchBarText, v => v.SearchBar.Text).DisposeWith(Disposables);
 

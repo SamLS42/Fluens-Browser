@@ -2,26 +2,25 @@
 
 #nullable disable
 
-namespace Fluens.Data.Migrations
+namespace Fluens.Data.Migrations;
+
+/// <inheritdoc />
+public partial class AddHistoryLastVisitedOnIndex : Migration
 {
     /// <inheritdoc />
-    public partial class AddHistoryLastVisitedOnIndex : Migration
+    protected override void Up(MigrationBuilder migrationBuilder)
     {
-        /// <inheritdoc />
-        protected override void Up(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.CreateIndex(
-                name: "IX_History_LastVisitedOn",
-                table: "History",
-                column: "LastVisitedOn");
-        }
+        migrationBuilder.CreateIndex(
+            name: "IX_History_LastVisitedOn",
+            table: "History",
+            column: "LastVisitedOn");
+    }
 
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.DropIndex(
-                name: "IX_History_LastVisitedOn",
-                table: "History");
-        }
+    /// <inheritdoc />
+    protected override void Down(MigrationBuilder migrationBuilder)
+    {
+        migrationBuilder.DropIndex(
+            name: "IX_History_LastVisitedOn",
+            table: "History");
     }
 }

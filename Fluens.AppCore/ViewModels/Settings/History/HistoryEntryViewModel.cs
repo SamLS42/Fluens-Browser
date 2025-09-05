@@ -3,6 +3,7 @@ using ReactiveUI.SourceGenerators;
 using System.Reactive;
 
 namespace Fluens.AppCore.ViewModels.Settings.History;
+
 public partial class HistoryEntryViewModel : ReactiveObject
 {
     [Reactive]

@@ -12,6 +12,7 @@ using WinRT;
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
 namespace Fluens.UI.Views.Settings;
+
 public sealed partial class SettingsView : UserControl
 {
     public SettingsViewModel ViewModel { get; set; }

@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 
 namespace Fluens.AppCore.Helpers;
+
 public static class UriExtensions
 {
     public static Uri EnforceHttps([NotNull] this Uri uri)

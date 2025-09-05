@@ -3,6 +3,7 @@ using Fluens.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Fluens.AppCore.Services;
+
 public class TabPersistencyService(IDbContextFactory<BrowserDbContext> dbContextFactory)
 {
     public async Task<BrowserTab[]> GetOpenTabsAsync()

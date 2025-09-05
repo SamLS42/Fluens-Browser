@@ -1,4 +1,5 @@
 ﻿namespace Fluens.Data.Entities;
+
 public class BrowserWindow
 {
     public int Id { get; set; }

@@ -8,18 +8,20 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 
 namespace Fluens.AppCore.ViewModels;
+
 public partial class AppTabViewModel : ReactiveObject, IDisposable
 {
     private const string httpsPrefix = "https://";
     private const string httpPrefix = "http://";
-    private string? documentTitle;
-    private string? faviconUrl;
+    private readonly string? documentTitle;
+    private readonly string? faviconUrl;
 
     private IReactiveWebView ReactiveWebView { get; set; } = null!;
     public IObservable<string> DocumentTitle => ReactiveWebView.DocumentTitle.AsObservable();
     public IObservable<string> FaviconUrl => ReactiveWebView.FaviconUrl.AsObservable();
     public IObservable<bool> IsLoading => ReactiveWebView.IsLoading.AsObservable();
     public IObservable<ShortcutMessage> KeyboardShortcuts => KeyboardShortcutsSource.AsObservable();
+    public IObservable<Unit> NavigationCompleted => ReactiveWebView.NavigationCompleted;
     private Subject<ShortcutMessage> KeyboardShortcutsSource { get; } = new();
 
     public int Id { get; set; }

@@ -3,6 +3,7 @@ using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 
 namespace Fluens.AppCore.ViewModels.Settings;
+
 public partial class SettingsViewModel : ReactiveObject
 {
     [Reactive]

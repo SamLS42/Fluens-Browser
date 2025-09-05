@@ -11,6 +11,7 @@ using System.Reactive.Subjects;
 using System.Text.Json;
 
 namespace Fluens.UI.Helpers;
+
 public sealed partial class ReactiveWebView : IReactiveWebView
 {
     private readonly CompositeDisposable Disposables = [];
@@ -79,6 +80,10 @@ public sealed partial class ReactiveWebView : IReactiveWebView
                         if (MyWebView.Source == Constants.AboutBlankUri)
                         {
                             FaviconUrlSource.OnNext(string.Empty);
+                        }
+                        else
+                        {
+                            FaviconUrlSource.OnNext(MyWebView.CoreWebView2.FaviconUri);
                         }
                     }
                 })

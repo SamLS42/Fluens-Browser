@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml.Media.Animation;
 using WinRT;
 
 namespace Fluens.UI.Helpers;
+
 internal static class FrameExtensions
 {
     extension(Frame frame)

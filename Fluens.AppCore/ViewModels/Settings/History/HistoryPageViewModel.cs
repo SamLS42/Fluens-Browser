@@ -9,6 +9,7 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 
 namespace Fluens.AppCore.ViewModels.Settings.History;
+
 public partial class HistoryPageViewModel : ReactiveObject, IDisposable
 {
 

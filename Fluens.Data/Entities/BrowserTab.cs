@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
 namespace Fluens.Data.Entities;
+
 public class BrowserTab
 {
     public int Id { get; set; }

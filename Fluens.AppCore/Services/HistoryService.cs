@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Collections.ObjectModel;
 
 namespace Fluens.AppCore.Services;
+
 public class HistoryService(IDbContextFactory<BrowserDbContext> dbContextFactory)
 {
     public async Task AddEntryAsync(Uri url, string faviconUrl, string documentTitle, CancellationToken cancellationToken = default)

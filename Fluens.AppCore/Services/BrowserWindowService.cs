@@ -3,6 +3,7 @@ using Fluens.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Fluens.AppCore.Services;
+
 public class BrowserWindowService(IDbContextFactory<BrowserDbContext> dbContextFactory)
 {
     public async Task<BrowserWindow?> GetLastWindowAsync()

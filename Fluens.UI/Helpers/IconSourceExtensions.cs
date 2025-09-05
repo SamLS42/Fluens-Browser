@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 
 namespace Fluens.UI.Helpers;
+
 internal static class IconSourceExtensions
 {
     extension(IconSource src)

@@ -11,6 +11,7 @@ using System.Reactive.Linq;
 using WinRT;
 
 namespace Fluens.UI.Views.Settings.History;
+
 public sealed partial class HistoryPage : ReactiveHistoryPage, IDisposable
 {
     private readonly CompositeDisposable _disposables = [];

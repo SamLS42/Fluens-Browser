@@ -2,6 +2,7 @@
 using System.Reactive;
 
 namespace Fluens.AppCore.Contracts;
+
 public interface IReactiveWebView : IDisposable
 {
     IObservable<string> DocumentTitle { get; }

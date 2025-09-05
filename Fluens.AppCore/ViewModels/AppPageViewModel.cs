@@ -4,6 +4,7 @@ using Fluens.Data.Entities;
 using System.Reactive.Linq;
 
 namespace Fluens.AppCore.ViewModels;
+
 public class AppPageViewModel(TabPersistencyService dataService)
 {
     public int WindowId { get; set; }

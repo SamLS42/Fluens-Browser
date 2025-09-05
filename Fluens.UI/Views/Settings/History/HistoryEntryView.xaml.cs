@@ -7,6 +7,7 @@ using System.Reactive.Disposables;
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
 namespace Fluens.UI.Views.Settings.History;
+
 public sealed partial class HistoryEntryView : ReactiveHistoryEntryView
 {
     public HistoryEntryView()

@@ -2,6 +2,7 @@
 using System.Collections.ObjectModel;
 
 namespace Fluens.AppCore.Services;
+
 public class HistoryPage
 {
     public required ReadOnlyCollection<HistoryEntry> Items { get; set; }
