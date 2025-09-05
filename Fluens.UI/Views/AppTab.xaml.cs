@@ -29,8 +29,6 @@ public sealed partial class AppTab : ReactiveAppTab, IDisposable
             .Subscribe(_ => WebView.Focus(FocusState.Programmatic))
             .DisposeWith(Disposables);
 
-        WebView.CoreWebView2.
-
         this.Bind(ViewModel, vm => vm.SearchBarText, v => v.SearchBar.Text).DisposeWith(Disposables);
 
         this.Bind(ViewModel, vm => vm.SettingsDialogIsOpen, v => v.SettingsPopup.IsOpen).DisposeWith(Disposables);
@@ -79,8 +77,6 @@ public sealed partial class AppTab : ReactiveAppTab, IDisposable
 
     public async Task ActivateAsync()
     {
-        await WebView.EnsureCoreWebView2Async();
-
         WebView.Focus(FocusState.Programmatic);
 
         if (WebView.Source is null &&
@@ -93,6 +89,8 @@ public sealed partial class AppTab : ReactiveAppTab, IDisposable
         {
             SearchBar.Focus(FocusState.Programmatic);
         }
+
+        await Task.CompletedTask;
     }
 
     private void DetectEnterKey(VirtualKey key)
