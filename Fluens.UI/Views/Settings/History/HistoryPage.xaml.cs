@@ -34,15 +34,18 @@ public sealed partial class HistoryPage : ReactiveHistoryPage, IDisposable
             .Subscribe()
             .DisposeWith(_disposables);
 
-        ViewModel.LoadHistoryCommand.Execute(Constants.HistoryPaginationSize).Subscribe();
+        ViewModel.LoadHistoryCommand
+            .Execute(Constants.HistoryPaginationSize)
+            .Subscribe();
 
         this.BindCommand(ViewModel, vm => vm.LoadHistoryCommand, v => v.LoadMoreBtn, withParameter: Observable.Return(Constants.HistoryPaginationSize))
             .DisposeWith(_disposables);
 
-        this.BindCommand(ViewModel, vm => vm.DeleteSelectedCmd, v => v.DeleteSelectedBtn)
+        this.BindCommand(ViewModel, vm => vm.DeleteSelectedCommand, v => v.DeleteSelectedBtn)
             .DisposeWith(_disposables);
 
-        ViewModel.DeleteSelectedCmd.CanExecute.Subscribe(canExecute => DeleteSelectedBtn.Visibility = canExecute ? Visibility.Visible : Visibility.Collapsed);
+        ViewModel.DeleteSelectedCommand.CanExecute
+            .Subscribe(canExecute => DeleteSelectedBtn.Visibility = canExecute ? Visibility.Visible : Visibility.Collapsed);
 
         this.OneWayBind(ViewModel, vm => vm.MoreAvailable, v => v.LoadMoreBtn.Visibility)
             .DisposeWith(_disposables);

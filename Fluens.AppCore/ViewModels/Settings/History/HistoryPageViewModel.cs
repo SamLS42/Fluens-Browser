@@ -11,7 +11,6 @@ namespace Fluens.AppCore.ViewModels.Settings.History;
 
 public partial class HistoryPageViewModel : ReactiveObject, IDisposable
 {
-
     public IObservableList<HistoryEntryViewModel> Entries => EntriesSource.AsObservableList();
     [Reactive]
     public partial bool MoreAvailable { get; set; } = true;
@@ -19,11 +18,14 @@ public partial class HistoryPageViewModel : ReactiveObject, IDisposable
     public partial bool CanSelectAll { get; set; }
     [Reactive]
     public partial List<HistoryEntryViewModel> SelectedEntries { get; set; } = [];
-    public ReactiveCommand<Unit, Unit> DeleteSelectedCmd { get; }
+    public ReactiveCommand<int, Unit> LoadHistoryCommand { get; }
+    public ReactiveCommand<Unit, Unit> DeleteSelectedCommand { get; }
+    public ReactiveCommand<Unit, Unit> ClearHistoryCommand { get; }
     private DateTime? NextLastDate { get; set; }
     private int? NextLastId { get; set; }
     private SourceList<HistoryEntryViewModel> EntriesSource { get; } = new();
     private HistoryService HistoryService { get; } = ServiceLocator.GetRequiredService<HistoryService>();
+
     public HistoryPageViewModel()
     {
         this.WhenAnyValue(vm => vm.SelectedEntries)
@@ -32,7 +34,9 @@ public partial class HistoryPageViewModel : ReactiveObject, IDisposable
         IObservable<bool> anyEntryIsSelected = this.WhenAnyValue(vm => vm.SelectedEntries)
             .Select(entries => entries.Count > 0);
 
-        DeleteSelectedCmd = ReactiveCommand.CreateFromTask(DeleteSelectedAsync, anyEntryIsSelected);
+        DeleteSelectedCommand = ReactiveCommand.CreateFromTask(DeleteSelectedAsync, anyEntryIsSelected);
+        ClearHistoryCommand = ReactiveCommand.CreateFromTask(HistoryService.ClearHistoryAsync);
+        LoadHistoryCommand = ReactiveCommand.CreateFromTask<int>(LoadHistoryAsync);
     }
 
     private void UpdateActionsVisibility()
@@ -40,7 +44,6 @@ public partial class HistoryPageViewModel : ReactiveObject, IDisposable
         CanSelectAll = EntriesSource.Count == 0 || SelectedEntries.Count != EntriesSource.Count;
     }
 
-    [ReactiveCommand]
     private async Task LoadHistoryAsync(int limit, CancellationToken cancellationToken = default)
     {
         if (!MoreAvailable)

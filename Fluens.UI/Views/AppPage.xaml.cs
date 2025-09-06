@@ -131,7 +131,7 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable, ITabPage
 
     private async Task<TabViewItem> CreateTabItemAsync(AppTabViewModel vm, bool activate = false)
     {
-        AppTab appTab = new(vm);
+        AppTab appTab = new() { ViewModel = vm };
 
         TabViewItem newTab = new()
         {
@@ -157,7 +157,8 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable, ITabPage
             .DisposeWith(disposables);
 
         Observable.FromEventPattern<TabViewItem, TabViewTabCloseRequestedEventArgs>(newTab, nameof(newTab.CloseRequested))
-            .Subscribe(_ => disposables.Dispose());
+            .Subscribe(_ => disposables.Dispose())
+            .DisposeWith(disposables);
 
         if (activate)
         {

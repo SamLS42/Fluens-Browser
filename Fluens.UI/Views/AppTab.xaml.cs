@@ -17,15 +17,14 @@ public partial class ReactiveAppTab : ReactiveUserControl<AppTabViewModel>;
 public sealed partial class AppTab : ReactiveAppTab, IDisposable
 {
     private readonly CompositeDisposable Disposables = [];
-    private readonly ReactiveWebView reactiveWebView;
-    public AppTab(AppTabViewModel viewModel)
+    public AppTab()
     {
         InitializeComponent();
 
-        ViewModel = viewModel;
-
-        reactiveWebView = new() { MyWebView = WebView };
-        ViewModel!.SetReactiveWebView(reactiveWebView);
+        this.WhenAnyValue(x => x.ViewModel)
+            .WhereNotNull()
+            .Subscribe(vm => vm.SetReactiveWebView(new ReactiveWebView() { MyWebView = WebView }))
+            .DisposeWith(Disposables);
 
         Observable.FromEventPattern<WebView2, CoreWebView2NavigationCompletedEventArgs>(WebView, nameof(WebView.NavigationCompleted))
             .Subscribe(ep => WebView.Focus(FocusState.Programmatic))
@@ -107,7 +106,6 @@ public sealed partial class AppTab : ReactiveAppTab, IDisposable
     public void Dispose()
     {
         Disposables.Dispose();
-        reactiveWebView.Dispose();
         ViewModel?.Dispose();
     }
 }

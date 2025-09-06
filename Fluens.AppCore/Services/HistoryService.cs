@@ -73,4 +73,11 @@ public class HistoryService(IDbContextFactory<BrowserDbContext> dbContextFactory
 
         await dbContext.History.Where(e => ids.Contains(e.Id)).ExecuteDeleteAsync(cancellationToken);
     }
+
+    internal async Task ClearHistoryAsync(CancellationToken cancellationToken = default)
+    {
+        await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
+        await dbContext.History.ExecuteDeleteAsync(cancellationToken);
+    }
 }
