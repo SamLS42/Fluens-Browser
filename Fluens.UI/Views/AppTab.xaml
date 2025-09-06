@@ -82,7 +82,7 @@
         <Popup
             x:Name="SettingsPopup"
             Grid.Row="1"
-            IsLightDismissEnabled="True"
+            IsLightDismissEnabled="False"
             LightDismissOverlayMode="On">
             <Border
                 x:Name="SettingsDialogContent"

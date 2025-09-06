@@ -13,18 +13,22 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
 {
     private const string httpsPrefix = "https://";
     private const string httpPrefix = "http://";
-    private readonly string? documentTitle;
-    private readonly string? faviconUrl;
 
     private IReactiveWebView ReactiveWebView { get; set; } = null!;
-    public IObservable<string> DocumentTitle => ReactiveWebView.DocumentTitle.AsObservable();
-    public IObservable<string> FaviconUrl => ReactiveWebView.FaviconUrl.AsObservable();
-    public IObservable<bool> IsLoading => ReactiveWebView.IsLoading.AsObservable();
+
     public IObservable<ShortcutMessage> KeyboardShortcuts => KeyboardShortcutsSource.AsObservable();
-    public IObservable<Unit> NavigationCompleted => ReactiveWebView.NavigationCompleted;
     private Subject<ShortcutMessage> KeyboardShortcutsSource { get; } = new();
 
     public int Id { get; set; }
+
+    [Reactive]
+    public partial string DocumentTitle { get; set; }
+
+    [Reactive]
+    public partial string FaviconUrl { get; set; }
+
+    [Reactive]
+    public partial bool IsLoading { get; set; }
 
     [Reactive]
     public partial bool CanStop { get; set; }
@@ -61,12 +65,12 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
     private HistoryService HistoryService { get; } = ServiceLocator.GetRequiredService<HistoryService>();
     private ITabPageManager TabPageManager { get; } = ServiceLocator.GetRequiredService<ITabPageManager>();
 
-    public AppTabViewModel(int id, Uri uri, bool isSelected, int parentWindowId, int? index = null, string? documentTitle = null, string? faviconUrl = null)
+    public AppTabViewModel(int id, Uri uri, bool isSelected, int parentWindowId, string documentTitle, string faviconUrl, int? index = null)
     {
         Id = id;
         Index = index;
-        this.documentTitle = documentTitle;
-        this.faviconUrl = faviconUrl;
+        DocumentTitle = documentTitle;
+        FaviconUrl = faviconUrl;
         Url = uri;
         IsSelected = isSelected;
         ParentWindowId = parentWindowId;
@@ -88,49 +92,45 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
             });
 
         this.WhenAnyValue(x => x.ParentWindowId)
-            .Subscribe(async parentWindowId0 =>
-            {
-                await TabPersistencyService.SetWindowAsync(Id, parentWindowId);
-            });
+            .Subscribe(async parentWindowId0 => await TabPersistencyService.SetWindowAsync(Id, parentWindowId));
 
-        this.WhenAnyValue(x => x.IsSelected)
-            .Subscribe(async isSelected => await TabPersistencyService.SetIsTabSelectedAsync(Id, isSelected));
-    }
+        this.WhenAnyValue(x => x.FaviconUrl)
+            .Subscribe(async faviconUrl => await TabPersistencyService.SaveTabFaviconUrlAsync(Id, faviconUrl));
 
-    private async Task UpdateHistoryAsync(CancellationToken cancellationToken = default)
-    {
-        await HistoryService.AddEntryAsync(await ReactiveWebView.Url.Take(1), await ReactiveWebView.FaviconUrl.Take(1), await ReactiveWebView.DocumentTitle.Take(1), cancellationToken);
+        this.WhenAnyValue(x => x.DocumentTitle)
+            .Subscribe(async documentTitle => await TabPersistencyService.SaveTabDocumentTitleAsync(Id, documentTitle));
+
+        this.WhenAnyValue(x => x.Url)
+            .Throttle(TimeSpan.FromSeconds(2))
+            .Subscribe(async _ => await UpdateHistoryAsync());
     }
 
     public void SetReactiveWebView(IReactiveWebView reactiveWebView)
     {
         ReactiveWebView = reactiveWebView;
-        ReactiveWebView.Setup(documentTitle, faviconUrl, Url);
+        ReactiveWebView.Setup(DocumentTitle, FaviconUrl, Url);
 
         GoBack = ReactiveCommand.Create(ReactiveWebView.GoBack);
         GoForward = ReactiveCommand.Create(ReactiveWebView.GoForward);
         Refresh = ReactiveCommand.Create(ReactiveWebView.Refresh);
         Stop = ReactiveCommand.Create(ReactiveWebView.StopNavigation);
 
-        ReactiveWebView.IsLoading.Subscribe(SetStopRefreshVisibility);
+        ReactiveWebView.IsNavigating.Subscribe(SetStopRefreshVisibility);
         ReactiveWebView.Url.Subscribe(url => Url = url);
-        FaviconUrl.Subscribe(async faviconUrl => await TabPersistencyService.SaveTabFaviconUrlAsync(Id, faviconUrl));
-        DocumentTitle.Subscribe(async documentTitle => await TabPersistencyService.SaveTabDocumentTitleAsync(Id, documentTitle));
-
-        ReactiveWebView.NavigationCompleted
-            .Merge(ReactiveWebView.FaviconUrl.Where(faviconUrl => !string.IsNullOrWhiteSpace(faviconUrl)).Select(_ => Unit.Default))
-            .Subscribe(async _ => await UpdateHistoryAsync());
-
-        ReactiveWebView.OpenNewTab
-            .Subscribe(async uri => await TabPageManager.GetParentTabPage(this).AddTabAsync(uri, isSelected: false, activate: true));
-
-        ReactiveWebView.KeyboardShortcuts
-            .Subscribe(KeyboardShortcutsSource.OnNext);
+        ReactiveWebView.DocumentTitle.Subscribe(documentTitle => DocumentTitle = documentTitle);
+        ReactiveWebView.FaviconUrl.Subscribe(faviconUrl => FaviconUrl = faviconUrl);
+        ReactiveWebView.OpenNewTab.Subscribe(async uri => await TabPageManager.GetParentTabPage(this).AddTabAsync(uri, isSelected: false, activate: true));
+        ReactiveWebView.KeyboardShortcuts.Subscribe(KeyboardShortcutsSource.OnNext);
     }
 
     public void ShortcutMessageInvoked(ShortcutMessage shortcutMessage)
     {
         KeyboardShortcutsSource.OnNext(shortcutMessage);
+    }
+
+    private async Task UpdateHistoryAsync(CancellationToken cancellationToken = default)
+    {
+        await HistoryService.AddEntryAsync(Url, FaviconUrl, DocumentTitle, cancellationToken);
     }
 
     private void NavigateToSearchBarInputImpl()
@@ -170,7 +170,6 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
 
         ReactiveWebView?.NavigateToUrl(url);
     }
-
 
     private void UpdateSearchBar()
     {

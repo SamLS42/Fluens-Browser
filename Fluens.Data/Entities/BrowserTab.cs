@@ -9,7 +9,7 @@ public class BrowserTab
     [Range(0, int.MaxValue)]
     public int Index { get; set; }
     public required string Url { get; set; }
-    public string? FaviconUrl { get; set; }
+    public string FaviconUrl { get; set; } = string.Empty;
     public string? DocumentTitle { get; set; }
     public DateTime? ClosedOn { get; set; }
     public bool IsSelected { get; set; }

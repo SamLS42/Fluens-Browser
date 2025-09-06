@@ -15,7 +15,7 @@ namespace Fluens.UI.Views.Settings.History;
 public sealed partial class HistoryPage : ReactiveHistoryPage, IDisposable
 {
     private readonly CompositeDisposable _disposables = [];
-    private readonly ObservableCollection<GroupHistoryEntry> historyEntries = [];
+    private readonly ObservableCollection<GroupHistoryEntry> groupedHistoryEntries = [];
 
     public HistoryPage()
     {
@@ -23,18 +23,21 @@ public sealed partial class HistoryPage : ReactiveHistoryPage, IDisposable
 
         ViewModel ??= ServiceLocator.GetRequiredService<HistoryPageViewModel>();
 
-        ViewModel.EntriesChanges.Subscribe(_ => RefreshListView())
+        ViewModel.Entries.CountChanged
+            .Throttle(TimeSpan.FromMilliseconds(200))
+            .ObserveOn(RxApp.MainThreadScheduler)
+            .Subscribe(_ => RefreshListView())
             .DisposeWith(_disposables);
 
-        ViewModel.LoadHistoryCommand.Execute(UIConstants.HistoryPaginationSize).Subscribe();
+        ViewModel.LoadHistoryCommand.Execute(Constants.HistoryPaginationSize).Subscribe();
 
-        this.BindCommand(ViewModel, vm => vm.LoadHistoryCommand, v => v.LoadMoreBtn, withParameter: Observable.Return(UIConstants.HistoryPaginationSize))
+        this.BindCommand(ViewModel, vm => vm.LoadHistoryCommand, v => v.LoadMoreBtn, withParameter: Observable.Return(Constants.HistoryPaginationSize))
             .DisposeWith(_disposables);
 
-        this.BindCommand(ViewModel, vm => vm.DeleteSelected, v => v.DeleteSelectedBtn)
+        this.BindCommand(ViewModel, vm => vm.DeleteSelectedCmd, v => v.DeleteSelectedBtn)
             .DisposeWith(_disposables);
 
-        ViewModel.DeleteSelected.CanExecute.Subscribe(canExecute => DeleteSelectedBtn.Visibility = canExecute ? Visibility.Visible : Visibility.Collapsed);
+        ViewModel.DeleteSelectedCmd.CanExecute.Subscribe(canExecute => DeleteSelectedBtn.Visibility = canExecute ? Visibility.Visible : Visibility.Collapsed);
 
         this.OneWayBind(ViewModel, vm => vm.MoreAvailable, v => v.LoadMoreBtn.Visibility)
             .DisposeWith(_disposables);
@@ -65,9 +68,9 @@ public sealed partial class HistoryPage : ReactiveHistoryPage, IDisposable
 
     private void RefreshListView()
     {
-        historyEntries.Clear();
+        groupedHistoryEntries.Clear();
 
-        historyEntries.AddRange(ViewModel!.Entries.Items.Select(vm => new HistoryEntryView() { ViewModel = vm })
+        groupedHistoryEntries.AddRange(ViewModel!.Entries.Items.Select(vm => new HistoryEntryView() { ViewModel = vm })
             .GroupBy(v => v.ViewModel!.LastVisitedOn.ToLongDateString())
             .Select(g => new GroupHistoryEntry(g) { Key = g.Key }));
     }
@@ -87,11 +90,14 @@ public sealed partial class HistoryPage : ReactiveHistoryPage, IDisposable
         if (EntryList.Items.All(EntryList.SelectedItems.Contains))
         {
             EntryList.SelectedItems.Clear();
-            UnSelectAllBtn.Visibility = Visibility.Collapsed;
+            //UnSelectAllBtn.Visibility = Visibility.Collapsed;
+            //SelectAllBtn.Visibility = Visibility.Visible;
         }
         else
         {
             EntryList.SelectAll();
+            //UnSelectAllBtn.Visibility = Visibility.Visible;
+            //SelectAllBtn.Visibility = Visibility.Collapsed;
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Microsoft.UI.Xaml.Controls;
+﻿using Fluens.AppCore.Helpers;
+using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 
@@ -15,7 +16,7 @@ internal static class IconSourceExtensions
                 return UIConstants.BlankPageIcon;
             }
 
-            if (faviconUrl == UIConstants.LoadingFaviconUri)
+            if (faviconUrl == Constants.LoadingFaviconUri)
             {
                 return UIConstants.LoadingPageIcon;
             }

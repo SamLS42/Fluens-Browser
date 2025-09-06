@@ -6,7 +6,6 @@ using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using System.Reactive;
 using System.Reactive.Linq;
-using System.Reactive.Subjects;
 
 namespace Fluens.AppCore.ViewModels.Settings.History;
 
@@ -14,15 +13,13 @@ public partial class HistoryPageViewModel : ReactiveObject, IDisposable
 {
 
     public IObservableList<HistoryEntryViewModel> Entries => EntriesSource.AsObservableList();
-    public IObservable<Unit> EntriesChanges => EntriesChanged.AsObservable();
     [Reactive]
     public partial bool MoreAvailable { get; set; } = true;
     [Reactive]
-    public partial bool CanSelectAll { get; set; } = true;
+    public partial bool CanSelectAll { get; set; }
     [Reactive]
     public partial List<HistoryEntryViewModel> SelectedEntries { get; set; } = [];
-    public ReactiveCommand<Unit, Unit> DeleteSelected { get; }
-    private Subject<Unit> EntriesChanged { get; } = new();
+    public ReactiveCommand<Unit, Unit> DeleteSelectedCmd { get; }
     private DateTime? NextLastDate { get; set; }
     private int? NextLastId { get; set; }
     private SourceList<HistoryEntryViewModel> EntriesSource { get; } = new();
@@ -30,19 +27,17 @@ public partial class HistoryPageViewModel : ReactiveObject, IDisposable
     public HistoryPageViewModel()
     {
         this.WhenAnyValue(vm => vm.SelectedEntries)
-            .WhereNotNull()
             .Subscribe(_ => UpdateActionsVisibility());
 
         IObservable<bool> anyEntryIsSelected = this.WhenAnyValue(vm => vm.SelectedEntries)
-            .WhereNotNull()
             .Select(entries => entries.Count > 0);
 
-        DeleteSelected = ReactiveCommand.CreateFromTask(DeleteSelectedAsync, anyEntryIsSelected);
+        DeleteSelectedCmd = ReactiveCommand.CreateFromTask(DeleteSelectedAsync, anyEntryIsSelected);
     }
 
     private void UpdateActionsVisibility()
     {
-        CanSelectAll = SelectedEntries.Count != EntriesSource.Count;
+        CanSelectAll = EntriesSource.Count == 0 || SelectedEntries.Count != EntriesSource.Count;
     }
 
     [ReactiveCommand]
@@ -72,13 +67,23 @@ public partial class HistoryPageViewModel : ReactiveObject, IDisposable
         NextLastDate = elementsPage.NextLastDate;
 
         MoreAvailable = NextLastId is not null;
-
-        EntriesChanged.OnNext(Unit.Default);
     }
 
-    private async Task DeleteSelectedAsync()
+    private async Task DeleteSelectedAsync(CancellationToken cancellationToken = default)
     {
-        await Task.CompletedTask;
+        await HistoryService.DeleteEntriesAsync([.. SelectedEntries.Select(e => e.Id)], cancellationToken);
+
+        EntriesSource.Clear();
+        ResetCursors();
+
+        await LoadHistoryAsync(Constants.HistoryPaginationSize, cancellationToken);
+    }
+
+    private void ResetCursors()
+    {
+        NextLastId = null;
+        NextLastDate = null;
+        MoreAvailable = true;
     }
 
     public void Dispose()
@@ -92,8 +97,6 @@ public partial class HistoryPageViewModel : ReactiveObject, IDisposable
         if (disposing)
         {
             EntriesSource.Dispose();
-            EntriesChanged.OnCompleted();
-            EntriesChanged.Dispose();
         }
     }
 }

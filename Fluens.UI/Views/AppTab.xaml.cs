@@ -3,7 +3,9 @@ using Fluens.AppCore.Helpers;
 using Fluens.AppCore.ViewModels;
 using Fluens.UI.Helpers;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.Web.WebView2.Core;
 using ReactiveUI;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
@@ -25,8 +27,8 @@ public sealed partial class AppTab : ReactiveAppTab, IDisposable
         reactiveWebView = new() { MyWebView = WebView };
         ViewModel!.SetReactiveWebView(reactiveWebView);
 
-        ViewModel.NavigationCompleted
-            .Subscribe(_ => WebView.Focus(FocusState.Programmatic))
+        Observable.FromEventPattern<WebView2, CoreWebView2NavigationCompletedEventArgs>(WebView, nameof(WebView.NavigationCompleted))
+            .Subscribe(ep => WebView.Focus(FocusState.Programmatic))
             .DisposeWith(Disposables);
 
         this.Bind(ViewModel, vm => vm.SearchBarText, v => v.SearchBar.Text).DisposeWith(Disposables);

@@ -2,6 +2,7 @@
 using Fluens.Data;
 using Fluens.Data.Entities;
 using Microsoft.EntityFrameworkCore;
+using ReactiveUI;
 using System.Collections.ObjectModel;
 
 namespace Fluens.AppCore.Services;
@@ -66,5 +67,10 @@ public class HistoryService(IDbContextFactory<BrowserDbContext> dbContextFactory
         };
     }
 
-    //DeleteEntriesAsync
+    internal async Task DeleteEntriesAsync(int[] ids, CancellationToken cancellationToken = default)
+    {
+        await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
+        await dbContext.History.Where(e => ids.Contains(e.Id)).ExecuteDeleteAsync(cancellationToken);
+    }
 }

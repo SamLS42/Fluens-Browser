@@ -135,19 +135,29 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable, ITabPage
 
         TabViewItem newTab = new()
         {
-            Header = UIConstants.NewTabTitle,
+            Header = Constants.NewTabTitle,
             IconSource = UIConstants.BlankPageIcon,
             Content = appTab
         };
 
-        vm.FaviconUrl.Subscribe(faviconUrl => newTab.IconSource = IconSource.GetFromUrl(faviconUrl));
-        vm.DocumentTitle.Subscribe(title =>
-        {
-            newTab.Header = string.IsNullOrWhiteSpace(title)
-                || title.Equals(Constants.AboutBlankUri.ToString(), StringComparison.Ordinal)
-                ? UIConstants.NewTabTitle
-                : title;
-        });
+        CompositeDisposable disposables = [];
+
+        vm.WhenAnyValue(vm => vm.FaviconUrl)
+            .Subscribe(faviconUrl => newTab.IconSource = IconSource.GetFromUrl(faviconUrl))
+            .DisposeWith(disposables);
+
+        vm.WhenAnyValue(vm => vm.DocumentTitle)
+            .Subscribe(title =>
+            {
+                newTab.Header = string.IsNullOrWhiteSpace(title)
+                    || title.Equals(Constants.AboutBlankUri.ToString(), StringComparison.Ordinal)
+                    ? Constants.NewTabTitle
+                    : title;
+            })
+            .DisposeWith(disposables);
+
+        Observable.FromEventPattern<TabViewItem, TabViewTabCloseRequestedEventArgs>(newTab, nameof(newTab.CloseRequested))
+            .Subscribe(_ => disposables.Dispose());
 
         if (activate)
         {

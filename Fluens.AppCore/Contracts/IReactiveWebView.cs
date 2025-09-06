@@ -9,7 +9,7 @@ public interface IReactiveWebView : IDisposable
     IObservable<string> FaviconUrl { get; }
     IObservable<Unit> NavigationCompleted { get; }
     IObservable<Unit> NavigationStarting { get; }
-    IObservable<bool> IsLoading { get; }
+    IObservable<bool> IsNavigating { get; }
     IObservable<Uri> Url { get; }
     IObservable<Uri> OpenNewTab { get; }
     IObservable<ShortcutMessage> KeyboardShortcuts { get; }

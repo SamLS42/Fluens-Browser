@@ -15,7 +15,7 @@
         <CollectionViewSource
             x:Name="ContactsCVS"
             IsSourceGrouped="True"
-            Source="{x:Bind historyEntries, Mode=OneWay}" />
+            Source="{x:Bind groupedHistoryEntries, Mode=OneWay}" />
     </history:ReactiveHistoryPage.Resources>
 
     <history:ReactiveHistoryPage.KeyboardAccelerators>

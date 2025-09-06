@@ -12,7 +12,9 @@ public class AppPageViewModel(TabPersistencyService dataService)
     {
         BrowserTab[] tabs = await dataService.GetOpenTabsAsync();
 
-        return [.. tabs.Select(item => new AppTabViewModel(item.Id, new Uri(item.Url), item.IsSelected, WindowId, item.Index, item.DocumentTitle, item.FaviconUrl))];
+        return [
+            .. tabs.Select(item => new AppTabViewModel(item.Id, new Uri(item.Url), item.IsSelected, WindowId, item.DocumentTitle ?? Constants.NewTabTitle, item.FaviconUrl, item.Index))
+            ];
     }
 
     public async Task<AppTabViewModel?> RecoverTabAsync()
@@ -24,7 +26,7 @@ public class AppPageViewModel(TabPersistencyService dataService)
             return null;
         }
 
-        return new AppTabViewModel(tab.Id, new Uri(tab.Url), tab.IsSelected, WindowId, tab.Index, tab.DocumentTitle, tab.FaviconUrl);
+        return new AppTabViewModel(tab.Id, new Uri(tab.Url), tab.IsSelected, WindowId, tab.DocumentTitle ?? Constants.NewTabTitle, tab.FaviconUrl, tab.Index);
     }
 
     public async Task<int> GetNewTabId()
@@ -40,7 +42,7 @@ public class AppPageViewModel(TabPersistencyService dataService)
     public async Task<AppTabViewModel> CreateTabAsync(Uri? uri = null, bool isSelected = true)
     {
         int id = await GetNewTabId();
-        AppTabViewModel vm = new(id, uri ?? Constants.AboutBlankUri, isSelected, WindowId);
+        AppTabViewModel vm = new(id, uri ?? Constants.AboutBlankUri, isSelected, WindowId, Constants.NewTabTitle, string.Empty);
         return vm;
     }
 }

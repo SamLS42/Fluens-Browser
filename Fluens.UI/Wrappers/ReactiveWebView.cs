@@ -16,8 +16,8 @@ public sealed partial class ReactiveWebView : IReactiveWebView
 {
     private readonly CompositeDisposable Disposables = [];
     public required WebView2 MyWebView { get; set; }
-    private BehaviorSubject<bool> IsLoadingSource { get; } = new(false);
-    public IObservable<bool> IsLoading => IsLoadingSource.AsObservable();
+    private BehaviorSubject<bool> IsNavigatingSource { get; } = new(false);
+    public IObservable<bool> IsNavigating => IsNavigatingSource.AsObservable();
     private BehaviorSubject<string> DocumentTitleSource { get; set; } = null!;
     public IObservable<string> DocumentTitle => DocumentTitleSource.AsObservable();
     private BehaviorSubject<string> FaviconUrlSource { get; set; } = null!;
@@ -47,7 +47,7 @@ public sealed partial class ReactiveWebView : IReactiveWebView
                 .Select(_ => true)
                 .Merge(Observable.FromEventPattern(MyWebView.CoreWebView2, nameof(MyWebView.CoreWebView2.NavigationCompleted))
                 .Select(_ => false))
-                .Subscribe(v => IsLoadingSource.OnNext(v));
+                .Subscribe(v => IsNavigatingSource.OnNext(v));
 
             Observable.FromEventPattern(MyWebView.CoreWebView2, nameof(MyWebView.CoreWebView2.DocumentTitleChanged))
                 .Select(_ => MyWebView.CoreWebView2.DocumentTitle)
@@ -58,7 +58,7 @@ public sealed partial class ReactiveWebView : IReactiveWebView
                 .Subscribe(ep =>
                 {
                     NavigationStartingSource.OnNext(Unit.Default);
-                    FaviconUrlSource.OnNext(UIConstants.LoadingFaviconUri);
+                    FaviconUrlSource.OnNext(Constants.LoadingFaviconUri);
                 })
                 .DisposeWith(Disposables);
 
@@ -89,8 +89,9 @@ public sealed partial class ReactiveWebView : IReactiveWebView
                 })
                 .DisposeWith(Disposables);
 
-            Observable.FromEventPattern<CoreWebView2, CoreWebView2SourceChangedEventArgs>(MyWebView.CoreWebView2, nameof(MyWebView.CoreWebView2.SourceChanged))
-                .Subscribe(_ => UrlSource.OnNext(MyWebView.Source))
+            Observable.FromEventPattern<CoreWebView2, object>(MyWebView.CoreWebView2, nameof(MyWebView.CoreWebView2.HistoryChanged))
+                .Select(ep => MyWebView.Source)
+                .Subscribe(UrlSource.OnNext)
                 .DisposeWith(Disposables);
 
             Observable.FromEventPattern<CoreWebView2, CoreWebView2NewWindowRequestedEventArgs>(MyWebView.CoreWebView2, nameof(MyWebView.CoreWebView2.NewWindowRequested))
@@ -175,7 +176,7 @@ window.addEventListener('keydown', function (e) {
 
     public void Dispose()
     {
-        IsLoadingSource.OnCompleted();
+        IsNavigatingSource.OnCompleted();
         DocumentTitleSource.OnCompleted();
         NavigationStartingSource.OnCompleted();
         NavigationCompletedSource.OnCompleted();
