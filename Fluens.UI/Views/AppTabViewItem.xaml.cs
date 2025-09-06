@@ -13,11 +13,10 @@ using Windows.System;
 
 namespace Fluens.UI.Views;
 
-public partial class ReactiveAppTab : ReactiveUserControl<AppTabViewModel>;
-public sealed partial class AppTab : ReactiveAppTab, IDisposable
+public sealed partial class AppTabViewItem : ReactiveAppTab, IDisposable
 {
     private readonly CompositeDisposable Disposables = [];
-    public AppTab()
+    public AppTabViewItem()
     {
         InitializeComponent();
 
@@ -36,6 +35,8 @@ public sealed partial class AppTab : ReactiveAppTab, IDisposable
         this.OneWayBind(ViewModel, vm => vm.SettingsDialogIsOpen, v => v.ConfigBtn.IsChecked).DisposeWith(Disposables);
         this.OneWayBind(ViewModel, vm => vm.CanStop, v => v.StopBtn.Visibility).DisposeWith(Disposables);
         this.OneWayBind(ViewModel, vm => vm.CanRefresh, v => v.RefreshBtn.Visibility).DisposeWith(Disposables);
+        this.OneWayBind(ViewModel, vm => vm.FaviconUrl, v => v.IconSource, IconSource.GetFromUrl).DisposeWith(Disposables);
+        this.OneWayBind(ViewModel, vm => vm.DocumentTitle, v => v.Header, GetCorrectTitle).DisposeWith(Disposables);
 
         this.BindCommand(ViewModel, vm => vm.GoBack, v => v.GoBackBtn).DisposeWith(Disposables);
         this.BindCommand(ViewModel, vm => vm.GoForward, v => v.GoForwardBtn).DisposeWith(Disposables);
@@ -76,6 +77,14 @@ public sealed partial class AppTab : ReactiveAppTab, IDisposable
             .DisposeWith(Disposables);
     }
 
+    private static string GetCorrectTitle(string title)
+    {
+        return string.IsNullOrWhiteSpace(title)
+                            || title.Equals(Constants.AboutBlankUri.ToString(), StringComparison.Ordinal)
+                            ? Constants.NewTabTitle
+                            : title;
+    }
+
     public async Task ActivateAsync()
     {
         WebView.Focus(FocusState.Programmatic);
@@ -108,4 +117,10 @@ public sealed partial class AppTab : ReactiveAppTab, IDisposable
         Disposables.Dispose();
         ViewModel?.Dispose();
     }
+}
+
+public partial class ReactiveAppTab : TabViewItem, IViewFor<AppTabViewModel>
+{
+    public AppTabViewModel? ViewModel { get; set; }
+    object? IViewFor.ViewModel { get => ViewModel; set => ViewModel = (AppTabViewModel?)value; }
 }

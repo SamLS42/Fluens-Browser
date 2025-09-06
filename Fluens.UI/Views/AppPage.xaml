@@ -9,36 +9,34 @@
     xmlns:settings="using:Fluens.UI.Views.Settings"
     mc:Ignorable="d">
 
-    <Grid>
-        <TabView
-            x:Name="tabView"
-            VerticalAlignment="Stretch"
-            Background="{ThemeResource SolidBackgroundFillColorSecondaryBrush}"
-            TabItemsSource="{x:Bind tabs}">
-            <TabView.TabStripHeader>
-                <Grid x:Name="ShellTitleBarInset" Background="Transparent" />
-            </TabView.TabStripHeader>
-            <TabView.TabStripFooter>
-                <Grid
-                    x:Name="CustomDragRegion"
-                    MinWidth="188"
-                    Background="Transparent" />
-            </TabView.TabStripFooter>
-            <TabView.KeyboardAccelerators>
-                <KeyboardAccelerator
-                    Key="W"
-                    Invoked="KeyboardAccelerator_Invoked"
-                    Modifiers="Control" />
-                <KeyboardAccelerator
-                    Key="T"
-                    Invoked="KeyboardAccelerator_Invoked"
-                    Modifiers="Control" />
-                <KeyboardAccelerator
-                    Key="T"
-                    Invoked="KeyboardAccelerator_Invoked"
-                    Modifiers="Control,Shift" />
-            </TabView.KeyboardAccelerators>
-        </TabView>
-    </Grid>
+    <TabView
+        x:Name="tabView"
+        VerticalAlignment="Stretch"
+        Background="{ThemeResource SolidBackgroundFillColorSecondaryBrush}"
+        TabItemsSource="{x:Bind tabs}">
+        <TabView.TabStripHeader>
+            <Grid x:Name="ShellTitleBarInset" Background="Transparent" />
+        </TabView.TabStripHeader>
+        <TabView.TabStripFooter>
+            <Grid
+                x:Name="CustomDragRegion"
+                MinWidth="188"
+                Background="Transparent" />
+        </TabView.TabStripFooter>
+        <TabView.KeyboardAccelerators>
+            <KeyboardAccelerator
+                Key="W"
+                Invoked="KeyboardAccelerator_Invoked"
+                Modifiers="Control" />
+            <KeyboardAccelerator
+                Key="T"
+                Invoked="KeyboardAccelerator_Invoked"
+                Modifiers="Control" />
+            <KeyboardAccelerator
+                Key="T"
+                Invoked="KeyboardAccelerator_Invoked"
+                Modifiers="Control,Shift" />
+        </TabView.KeyboardAccelerators>
+    </TabView>
 
 </local:ReactiveAppPage>

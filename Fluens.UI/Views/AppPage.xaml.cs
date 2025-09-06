@@ -29,8 +29,8 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable, ITabPage
     private readonly Subject<Unit> hasNoTabs = new();
     public IObservable<Unit> HasNoTabs => hasNoTabs.AsObservable();
 
-    private readonly ObservableCollection<TabViewItem> tabs = []; //For some reason, adding tabs is faster (visually) when using TabItemsSource instead of using Items directly
-    private readonly SourceCache<TabViewItem, int> tabsSource = new(tvi => tvi.ViewModel.Id);
+    private readonly ObservableCollection<AppTabViewItem> tabs = []; //For some reason, adding tabs is faster (visually) when using TabItemsSource instead of using Items directly
+    private readonly SourceCache<AppTabViewItem, int> tabsSource = new(tvi => tvi.ViewModel!.Id);
 
     private WindowsManager WindowsManager { get; } = ServiceLocator.GetRequiredService<WindowsManager>();
 
@@ -46,12 +46,12 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable, ITabPage
         Observable.FromEventPattern<SelectionChangedEventArgs>(tabView, nameof(tabView.SelectionChanged))
             .Subscribe(ep =>
             {
-                ep.EventArgs.RemovedItems.FirstOrDefault()?.As<TabViewItem>().ViewModel!.IsSelected = false;
-                ep.EventArgs.AddedItems.FirstOrDefault()?.As<TabViewItem>().ViewModel!.IsSelected = true;
+                ep.EventArgs.RemovedItems.FirstOrDefault()?.As<AppTabViewItem>().ViewModel!.IsSelected = false;
+                ep.EventArgs.AddedItems.FirstOrDefault()?.As<AppTabViewItem>().ViewModel!.IsSelected = true;
             });
 
         Observable.FromEventPattern<TabView, TabViewTabCloseRequestedEventArgs>(tabView, nameof(tabView.TabCloseRequested))
-            .Subscribe(async pattern => await CloseTabAsync(pattern.EventArgs.Tab));
+            .Subscribe(async pattern => await CloseTabAsync(pattern.EventArgs.Tab.As<AppTabViewItem>()));
 
         Observable.FromEventPattern<NotifyCollectionChangedEventArgs>(tabs, nameof(tabs.CollectionChanged))
             .Subscribe(_ =>
@@ -61,14 +61,14 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable, ITabPage
                     hasNoTabs.OnNext(Unit.Default);
                 }
 
-                tabsSource.EditDiff(tabs, TabViewItemComparer.Instance);
+                tabsSource.EditDiff(tabs, areItemsEqual: (i1, i2) => i1.ViewModel!.Id == i2.ViewModel!.Id);
             });
 
         Observable.FromEventPattern<TabView, IVectorChangedEventArgs>(tabView, nameof(tabView.TabItemsChanged))
             .Subscribe(ep => UpdateTabIndexes());
 
         tabsSource.Connect()
-            .MergeMany(tabView => tabView.ViewModel.KeyboardShortcuts)
+            .MergeMany(tabView => tabView.ViewModel!.KeyboardShortcuts)
             .Subscribe(async s => await HandleKeyboardShortcutAsync(s))
             .DisposeWith(disposables);
     }
@@ -84,7 +84,7 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable, ITabPage
                 await AddTabAsync();
                 break;
             case { Ctrl: true, Key: "W" }:
-                await CloseTabAsync(tabView.SelectedItem.As<TabViewItem>());
+                await CloseTabAsync(tabView.SelectedItem.As<AppTabViewItem>());
                 break;
         }
     }
@@ -111,7 +111,7 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable, ITabPage
 
     private async Task AddTabViewItemAsync(AppTabViewModel vm, bool activate = false)
     {
-        TabViewItem tabViewItem = await CreateTabItemAsync(vm, activate);
+        AppTabViewItem tabViewItem = await CreateTabItemAsync(vm, activate);
 
         if (vm.Index != null)
         {
@@ -129,61 +129,36 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable, ITabPage
         }
     }
 
-    private async Task<TabViewItem> CreateTabItemAsync(AppTabViewModel vm, bool activate = false)
+    private async Task<AppTabViewItem> CreateTabItemAsync(AppTabViewModel vm, bool activate = false)
     {
-        AppTab appTab = new() { ViewModel = vm };
-
-        TabViewItem newTab = new()
+        AppTabViewItem appTab = new()
         {
+            ViewModel = vm,
             Header = Constants.NewTabTitle,
             IconSource = UIConstants.BlankPageIcon,
-            Content = appTab
         };
-
-        CompositeDisposable disposables = [];
-
-        vm.WhenAnyValue(vm => vm.FaviconUrl)
-            .Subscribe(faviconUrl => newTab.IconSource = IconSource.GetFromUrl(faviconUrl))
-            .DisposeWith(disposables);
-
-        vm.WhenAnyValue(vm => vm.DocumentTitle)
-            .Subscribe(title =>
-            {
-                newTab.Header = string.IsNullOrWhiteSpace(title)
-                    || title.Equals(Constants.AboutBlankUri.ToString(), StringComparison.Ordinal)
-                    ? Constants.NewTabTitle
-                    : title;
-            })
-            .DisposeWith(disposables);
-
-        Observable.FromEventPattern<TabViewItem, TabViewTabCloseRequestedEventArgs>(newTab, nameof(newTab.CloseRequested))
-            .Subscribe(_ => disposables.Dispose())
-            .DisposeWith(disposables);
 
         if (activate)
         {
             await appTab.ActivateAsync();
         }
 
-        return newTab;
+        return appTab;
     }
 
     private void UpdateTabIndexes()
     {
-        foreach (TabViewItem tabItem in tabs.OfType<TabViewItem>())
+        foreach (AppTabViewItem tabItem in tabs)
         {
-            AppTab appTab = tabItem.Content.As<AppTab>();
-            int newIndex = tabs.IndexOf(tabItem);
-            appTab.ViewModel?.Index = newIndex;
+            tabItem.ViewModel?.Index = tabs.IndexOf(tabItem);
         }
     }
 
-    private async Task CloseTabAsync(TabViewItem tabView)
+    private async Task CloseTabAsync(AppTabViewItem tabView)
     {
-        AppTab tab = tabView.AppTab;
         tabs.Remove(tabView);
-        await ViewModel!.CloseTabAsync(tab.ViewModel!.Id);
-        tab.Dispose();
+        await ViewModel!.CloseTabAsync(tabView.ViewModel!.Id);
+        tabView.Dispose();
     }
 
     public async Task ApplyOnStartupSettingAsync(OnStartupSetting onStartupSetting)
