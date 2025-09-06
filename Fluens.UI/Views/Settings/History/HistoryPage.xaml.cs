@@ -8,14 +8,13 @@ using ReactiveUI;
 using System.Collections.ObjectModel;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
-using WinRT;
 
 namespace Fluens.UI.Views.Settings.History;
 
 public sealed partial class HistoryPage : ReactiveHistoryPage, IDisposable
 {
     private readonly CompositeDisposable _disposables = [];
-    private readonly ObservableCollection<GroupHistoryEntry> groupedHistoryEntries = [];
+    private readonly ReadOnlyObservableCollection<GroupHistoryEntry> groupedHistoryEntries;
 
     public HistoryPage()
     {
@@ -23,10 +22,16 @@ public sealed partial class HistoryPage : ReactiveHistoryPage, IDisposable
 
         ViewModel ??= ServiceLocator.GetRequiredService<HistoryPageViewModel>();
 
-        ViewModel.Entries.CountChanged
-            .Throttle(TimeSpan.FromMilliseconds(200))
-            .ObserveOn(RxApp.MainThreadScheduler)
-            .Subscribe(_ => RefreshListView())
+        ViewModel.Entries.Connect()
+            .GroupOn(vm => vm.LastVisitedOn.ToLongDateString())
+            .Transform(group =>
+            {
+                IDisposable innerListSubscription = group.List.Connect().Bind(out ReadOnlyObservableCollection<HistoryEntryViewModel> items).Subscribe();
+                return new GroupHistoryEntry(group.GroupKey, items, innerListSubscription);
+            })
+            .DisposeMany()
+            .Bind(out groupedHistoryEntries)
+            .Subscribe()
             .DisposeWith(_disposables);
 
         ViewModel.LoadHistoryCommand.Execute(Constants.HistoryPaginationSize).Subscribe();
@@ -58,21 +63,12 @@ public sealed partial class HistoryPage : ReactiveHistoryPage, IDisposable
             .Subscribe(_ => UpdateSelection());
 
         Observable.FromEventPattern(CommandBar, nameof(CommandBar.Closed))
-            .Subscribe(_ => EntryList.Items.FirstOrDefault()?.As<HistoryEntryView>().Focus(FocusState.Pointer)); //Retrieve focus from the commandBar
+            .Subscribe(_ => EntryList.ItemsPanelRoot.Focus(FocusState.Pointer)); //Retrieve focus from the commandBar
     }
 
     private void UpdateSelection()
     {
-        ViewModel!.SelectedEntries = [.. EntryList.SelectedItems.Cast<HistoryEntryView>().Select(v => v.ViewModel!)];
-    }
-
-    private void RefreshListView()
-    {
-        groupedHistoryEntries.Clear();
-
-        groupedHistoryEntries.AddRange(ViewModel!.Entries.Items.Select(vm => new HistoryEntryView() { ViewModel = vm })
-            .GroupBy(v => v.ViewModel!.LastVisitedOn.ToLongDateString())
-            .Select(g => new GroupHistoryEntry(g) { Key = g.Key }));
+        ViewModel!.SelectedEntries = [.. EntryList.SelectedItems.Cast<HistoryEntryViewModel>()];
     }
 
     public void Dispose()
@@ -90,14 +86,10 @@ public sealed partial class HistoryPage : ReactiveHistoryPage, IDisposable
         if (EntryList.Items.All(EntryList.SelectedItems.Contains))
         {
             EntryList.SelectedItems.Clear();
-            //UnSelectAllBtn.Visibility = Visibility.Collapsed;
-            //SelectAllBtn.Visibility = Visibility.Visible;
         }
         else
         {
             EntryList.SelectAll();
-            //UnSelectAllBtn.Visibility = Visibility.Visible;
-            //SelectAllBtn.Visibility = Visibility.Collapsed;
         }
     }
 }

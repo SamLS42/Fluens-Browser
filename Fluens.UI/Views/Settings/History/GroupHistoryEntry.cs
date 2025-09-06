@@ -1,11 +1,29 @@
-﻿namespace Fluens.UI.Views.Settings.History;
+﻿using Fluens.AppCore.ViewModels.Settings.History;
+using System.Collections.ObjectModel;
 
-public partial class GroupHistoryEntry(IEnumerable<HistoryEntryView> items) : List<HistoryEntryView>(items)
+namespace Fluens.UI.Views.Settings.History;
+
+public partial class GroupHistoryEntry(string key, ReadOnlyObservableCollection<HistoryEntryViewModel> items, IDisposable cleanup) : IDisposable
 {
-    public required string Key { get; set; }
+    public string Key { get; } = key;
+    public ReadOnlyObservableCollection<HistoryEntryViewModel> Items { get; } = items;
 
     public override string ToString()
     {
         return Key;
+    }
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool dispose)
+    {
+        if (dispose)
+        {
+            cleanup.Dispose();
+        }
     }
 }
