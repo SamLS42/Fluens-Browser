@@ -1,9 +1,10 @@
 ﻿using Fluens.AppCore.ViewModels;
+using ReactiveUI;
 
 namespace Fluens.AppCore.Contracts;
 
-public interface ITabPage
+public interface ITabPage : IViewFor<AppPageViewModel>
 {
-    Task AddTabAsync(Uri? uri = null, bool isSelected = true, bool activate = false);
+    IViewFor<AppTabViewModel> CreateTabViewItem(AppTabViewModel vm);
     bool HasTab(AppTabViewModel tab);
 }

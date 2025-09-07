@@ -6,7 +6,7 @@ namespace Fluens.AppCore.Services;
 
 public class TabPersistencyService(IDbContextFactory<BrowserDbContext> dbContextFactory)
 {
-    public async Task<BrowserTab[]> GetOpenTabsAsync()
+    public async Task<BrowserTab[]> RecoverTabsAsync()
     {
         await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync();
 

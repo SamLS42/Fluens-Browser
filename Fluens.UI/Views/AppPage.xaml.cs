@@ -41,13 +41,20 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable, ITabPage
         ViewModel ??= ServiceLocator.GetRequiredService<AppPageViewModel>();
 
         Observable.FromEventPattern<TabView, object>(tabView, nameof(tabView.AddTabButtonClick))
-            .Subscribe(async _ => await AddTabAsync());
+            .Subscribe(async _ =>
+            {
+                tabView.SelectedItem = CreateTabViewItem(await ViewModel!.CreateTabAsync());
+            });
 
         Observable.FromEventPattern<SelectionChangedEventArgs>(tabView, nameof(tabView.SelectionChanged))
             .Subscribe(ep =>
             {
                 ep.EventArgs.RemovedItems.FirstOrDefault()?.As<AppTabViewItem>().ViewModel!.IsSelected = false;
-                ep.EventArgs.AddedItems.FirstOrDefault()?.As<AppTabViewItem>().ViewModel!.IsSelected = true;
+
+                if (ep.EventArgs.AddedItems.FirstOrDefault()?.As<AppTabViewItem>() is AppTabViewItem appTab)
+                {
+                    appTab.ViewModel!.IsSelected = true;
+                }
             });
 
         Observable.FromEventPattern<TabView, TabViewTabCloseRequestedEventArgs>(tabView, nameof(tabView.TabCloseRequested))
@@ -81,37 +88,32 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable, ITabPage
                 await RestoreClosedTabAsync();
                 break;
             case { Ctrl: true, Key: "T" }:
-                await AddTabAsync();
+                tabView.SelectedItem = CreateTabViewItem(await ViewModel!.CreateTabAsync());
                 break;
             case { Ctrl: true, Key: "W" }:
                 await CloseTabAsync(tabView.SelectedItem.As<AppTabViewItem>());
+                break;
+            case { Key: "F5" }:
+                tabView.SelectedItem.As<AppTabViewItem>().ViewModel!.Refresh.Execute().Subscribe();
                 break;
         }
     }
 
     private async Task RestoreClosedTabAsync()
     {
-        AppTabViewModel? vm = await ViewModel!.RecoverTabAsync();
+        AppTabViewModel? vm = await ViewModel!.GetClosedTabAsync();
 
         if (vm is null)
         {
             return;
         }
 
-        vm.IsSelected = true;
-
-        await AddTabViewItemAsync(vm, activate: true);
+        tabView.SelectedItem = CreateTabViewItem(vm);
     }
 
-    public async Task AddTabAsync(Uri? uri = null, bool isSelected = true, bool activate = false)
+    public IViewFor<AppTabViewModel> CreateTabViewItem(AppTabViewModel vm)
     {
-        AppTabViewModel vm = await ViewModel!.CreateTabAsync(uri, isSelected);
-        await AddTabViewItemAsync(vm, activate);
-    }
-
-    private async Task AddTabViewItemAsync(AppTabViewModel vm, bool activate = false)
-    {
-        AppTabViewItem tabViewItem = await CreateTabItemAsync(vm, activate);
+        AppTabViewItem tabViewItem = CreateTabItemAsync(vm);
 
         if (vm.Index != null)
         {
@@ -122,14 +124,10 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable, ITabPage
             tabs.Add(tabViewItem);
         }
 
-
-        if (vm.IsSelected)
-        {
-            tabView.SelectedItem = tabViewItem;
-        }
+        return tabViewItem;
     }
 
-    private async Task<AppTabViewItem> CreateTabItemAsync(AppTabViewModel vm, bool activate = false)
+    private AppTabViewItem CreateTabItemAsync(AppTabViewModel vm)
     {
         AppTabViewItem appTab = new()
         {
@@ -137,11 +135,6 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable, ITabPage
             Header = Constants.NewTabTitle,
             IconSource = UIConstants.BlankPageIcon,
         };
-
-        if (activate)
-        {
-            await appTab.ActivateAsync();
-        }
 
         return appTab;
     }
@@ -168,12 +161,12 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable, ITabPage
         switch (onStartupSetting)
         {
             case OnStartupSetting.OpenNewTab:
-                await AddTabAsync();
+                tabView.SelectedItem = CreateTabViewItem(await ViewModel!.CreateTabAsync());
                 break;
             case OnStartupSetting.RestoreOpenTabs:
                 foreach (AppTabViewModel vm in await ViewModel!.RecoverTabsAsync())
                 {
-                    await AddTabViewItemAsync(vm);
+                    CreateTabViewItem(vm);
                 }
                 break;
             //TODO
@@ -182,18 +175,18 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable, ITabPage
             case OnStartupSetting.RestoreAndOpenNewTab:
                 foreach (AppTabViewModel vm in await ViewModel!.RecoverTabsAsync())
                 {
-                    await AddTabViewItemAsync(vm);
+                    CreateTabViewItem(vm);
                 }
-                await AddTabAsync();
+                tabView.SelectedItem = CreateTabViewItem(await ViewModel!.CreateTabAsync());
                 break;
             default:
-                await AddTabAsync();
+                tabView.SelectedItem = CreateTabViewItem(await ViewModel!.CreateTabAsync());
                 break;
         }
 
         if (tabs.Count == 0)
         {
-            await AddTabAsync();
+            tabView.SelectedItem = CreateTabViewItem(await ViewModel!.CreateTabAsync());
         }
     }
 

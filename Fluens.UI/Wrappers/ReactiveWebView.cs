@@ -4,7 +4,6 @@ using Fluens.UI.Helpers;
 using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.Web.WebView2.Core;
-using System.Reactive;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
@@ -12,89 +11,77 @@ using System.Text.Json;
 
 namespace Fluens.UI.Helpers;
 
-public sealed partial class ReactiveWebView : IReactiveWebView
+public sealed partial class ReactiveWebView : WebView2, IReactiveWebView
 {
     private readonly CompositeDisposable Disposables = [];
-    public required WebView2 MyWebView { get; set; }
-    private BehaviorSubject<bool> IsNavigatingSource { get; } = new(false);
+    private Subject<bool> IsNavigatingSource { get; } = new();
     public IObservable<bool> IsNavigating => IsNavigatingSource.AsObservable();
-    private BehaviorSubject<string> DocumentTitleSource { get; set; } = null!;
+    private Subject<string> DocumentTitleSource { get; set; } = new();
     public IObservable<string> DocumentTitle => DocumentTitleSource.AsObservable();
-    private BehaviorSubject<string> FaviconUrlSource { get; set; } = null!;
+    private Subject<string> FaviconUrlSource { get; set; } = new();
     public IObservable<string> FaviconUrl => FaviconUrlSource.AsObservable();
-    private Subject<Unit> NavigationStartingSource { get; } = new();
-    public IObservable<Unit> NavigationStarting => NavigationStartingSource.AsObservable();
-    private Subject<Unit> NavigationCompletedSource { get; } = new();
-    public IObservable<Unit> NavigationCompleted => NavigationCompletedSource.AsObservable();
-    private BehaviorSubject<Uri> UrlSource { get; set; } = null!;
+    private Subject<Uri> UrlSource { get; set; } = new();
     public IObservable<Uri> Url => UrlSource.AsObservable();
     private Subject<Uri> OpenNewTabSource { get; set; } = new();
     public IObservable<Uri> OpenNewTab => OpenNewTabSource.AsObservable();
     private Subject<ShortcutMessage> KeyboardShortcutsSource { get; set; } = new();
     public IObservable<ShortcutMessage> KeyboardShortcuts => KeyboardShortcutsSource.AsObservable();
 
-    public void Setup(string? documentTitle = null, string? faviconUrl = null, Uri? url = null)
+    public ReactiveWebView()
     {
-        DocumentTitleSource = new(documentTitle ?? string.Empty);
-        FaviconUrlSource = new(faviconUrl ?? string.Empty);
-        UrlSource = new(url ?? Constants.AboutBlankUri);
-
-        Observable.FromEventPattern<WebView2, CoreWebView2InitializedEventArgs>(MyWebView, nameof(MyWebView.CoreWebView2Initialized)).Subscribe(async ep =>
+        Observable.FromEventPattern<WebView2, CoreWebView2InitializedEventArgs>(this, nameof(CoreWebView2Initialized)).Subscribe(async ep =>
         {
             await AddShortcutListenersAsync();
 
-            Observable.FromEventPattern(MyWebView.CoreWebView2, nameof(MyWebView.CoreWebView2.NavigationStarting))
+            Observable.FromEventPattern(CoreWebView2, nameof(CoreWebView2.NavigationStarting))
                 .Select(_ => true)
-                .Merge(Observable.FromEventPattern(MyWebView.CoreWebView2, nameof(MyWebView.CoreWebView2.NavigationCompleted))
+                .Merge(Observable.FromEventPattern(CoreWebView2, nameof(CoreWebView2.NavigationCompleted))
                 .Select(_ => false))
                 .Subscribe(v => IsNavigatingSource.OnNext(v));
 
-            Observable.FromEventPattern(MyWebView.CoreWebView2, nameof(MyWebView.CoreWebView2.DocumentTitleChanged))
-                .Select(_ => MyWebView.CoreWebView2.DocumentTitle)
+            Observable.FromEventPattern(CoreWebView2, nameof(CoreWebView2.DocumentTitleChanged))
+                .Select(_ => CoreWebView2.DocumentTitle)
                 .Subscribe(DocumentTitleSource.OnNext)
                 .DisposeWith(Disposables);
 
-            Observable.FromEventPattern<CoreWebView2, CoreWebView2NavigationStartingEventArgs>(MyWebView.CoreWebView2, nameof(MyWebView.CoreWebView2.NavigationStarting))
+            Observable.FromEventPattern<CoreWebView2, CoreWebView2NavigationStartingEventArgs>(CoreWebView2, nameof(CoreWebView2.NavigationStarting))
                 .Subscribe(ep =>
                 {
-                    NavigationStartingSource.OnNext(Unit.Default);
                     FaviconUrlSource.OnNext(Constants.LoadingFaviconUri);
                 })
                 .DisposeWith(Disposables);
 
-            Observable.FromEventPattern<CoreWebView2, object>(MyWebView.CoreWebView2, nameof(MyWebView.CoreWebView2.FaviconChanged))
-                .Select(_ => MyWebView.CoreWebView2.FaviconUri)
+            Observable.FromEventPattern<CoreWebView2, object>(CoreWebView2, nameof(CoreWebView2.FaviconChanged))
+                .Select(_ => CoreWebView2.FaviconUri)
                 .Where(x => !string.IsNullOrWhiteSpace(x))
                 .Subscribe(x => FaviconUrlSource.OnNext(x))
                 .DisposeWith(Disposables);
 
-            Observable.FromEventPattern<CoreWebView2, CoreWebView2NavigationCompletedEventArgs>(MyWebView.CoreWebView2, nameof(MyWebView.CoreWebView2.NavigationCompleted))
+            Observable.FromEventPattern<CoreWebView2, CoreWebView2NavigationCompletedEventArgs>(CoreWebView2, nameof(CoreWebView2.NavigationCompleted))
                 .Subscribe(async ep =>
                 {
                     await AddShortcutListenersAsync();
 
                     if (ep.EventArgs.IsSuccess)
                     {
-                        NavigationCompletedSource.OnNext(Unit.Default);
-
-                        if (MyWebView.Source == Constants.AboutBlankUri)
+                        if (Source == Constants.AboutBlankUri)
                         {
                             FaviconUrlSource.OnNext(string.Empty);
                         }
                         else
                         {
-                            FaviconUrlSource.OnNext(MyWebView.CoreWebView2.FaviconUri);
+                            FaviconUrlSource.OnNext(CoreWebView2.FaviconUri);
                         }
                     }
                 })
                 .DisposeWith(Disposables);
 
-            Observable.FromEventPattern<CoreWebView2, object>(MyWebView.CoreWebView2, nameof(MyWebView.CoreWebView2.HistoryChanged))
-                .Select(ep => MyWebView.Source)
+            Observable.FromEventPattern<CoreWebView2, object>(CoreWebView2, nameof(CoreWebView2.HistoryChanged))
+                .Select(ep => Source)
                 .Subscribe(UrlSource.OnNext)
                 .DisposeWith(Disposables);
 
-            Observable.FromEventPattern<CoreWebView2, CoreWebView2NewWindowRequestedEventArgs>(MyWebView.CoreWebView2, nameof(MyWebView.CoreWebView2.NewWindowRequested))
+            Observable.FromEventPattern<CoreWebView2, CoreWebView2NewWindowRequestedEventArgs>(CoreWebView2, nameof(CoreWebView2.NewWindowRequested))
                 .Subscribe(ep =>
                 {
                     ep.EventArgs.Handled = true;
@@ -106,7 +93,7 @@ public sealed partial class ReactiveWebView : IReactiveWebView
                 })
                 .DisposeWith(Disposables);
 
-            Observable.FromEventPattern<CoreWebView2, CoreWebView2WebMessageReceivedEventArgs>(MyWebView.CoreWebView2, nameof(MyWebView.CoreWebView2.WebMessageReceived))
+            Observable.FromEventPattern<CoreWebView2, CoreWebView2WebMessageReceivedEventArgs>(CoreWebView2, nameof(CoreWebView2.WebMessageReceived))
                 .Subscribe(ep =>
                 {
                     ShortcutMessage? message = JsonSerializer.Deserialize<ShortcutMessage>(ep.EventArgs.WebMessageAsJson);
@@ -149,47 +136,35 @@ window.addEventListener('keydown', function (e) {
 });
 ";
 
-        await MyWebView.CoreWebView2.ExecuteScriptAsync(script);
-    }
-
-    public void GoBack()
-    {
-        MyWebView.GoBack();
-    }
-
-    public void GoForward()
-    {
-        MyWebView.GoForward();
+        await CoreWebView2.ExecuteScriptAsync(script);
     }
 
     //TODO: this stop doesn't work on SPA, i.e. Youtube, it doens't stops scripts
     //https://learn.microsoft.com/en-us/dotnet/api/microsoft.web.webview2.core.corewebview2.stop?view=webview2-dotnet-1.0.3351.48#remarks
     public void StopNavigation()
     {
-        MyWebView.CoreWebView2.Stop();
+        CoreWebView2.Stop();
     }
 
     public void Refresh()
     {
-        MyWebView.CoreWebView2.Reload();
+        CoreWebView2.Reload();
     }
 
     public void Dispose()
     {
         IsNavigatingSource.OnCompleted();
         DocumentTitleSource.OnCompleted();
-        NavigationStartingSource.OnCompleted();
-        NavigationCompletedSource.OnCompleted();
         UrlSource.OnCompleted();
         OpenNewTabSource.OnCompleted();
         KeyboardShortcutsSource.OnCompleted();
         Disposables.Dispose();
-        MyWebView.Close();
+        Close();
     }
 
     public void NavigateToUrl(Uri url)
     {
-        MyWebView.Source = url;
+        Source = url;
     }
 
 

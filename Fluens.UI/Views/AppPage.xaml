@@ -32,6 +32,7 @@
                 Key="T"
                 Invoked="KeyboardAccelerator_Invoked"
                 Modifiers="Control" />
+            <KeyboardAccelerator Key="F5" Invoked="KeyboardAccelerator_Invoked" />
             <KeyboardAccelerator
                 Key="T"
                 Invoked="KeyboardAccelerator_Invoked"

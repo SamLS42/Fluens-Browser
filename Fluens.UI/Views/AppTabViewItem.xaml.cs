@@ -22,7 +22,7 @@ public sealed partial class AppTabViewItem : ReactiveAppTab, IDisposable
 
         this.WhenAnyValue(x => x.ViewModel)
             .WhereNotNull()
-            .Subscribe(vm => vm.SetReactiveWebView(new ReactiveWebView() { MyWebView = WebView }))
+            .Subscribe(vm => vm.ReactiveWebView = WebView)
             .DisposeWith(Disposables);
 
         Observable.FromEventPattern<WebView2, CoreWebView2NavigationCompletedEventArgs>(WebView, nameof(WebView.NavigationCompleted))
@@ -42,7 +42,7 @@ public sealed partial class AppTabViewItem : ReactiveAppTab, IDisposable
         this.BindCommand(ViewModel, vm => vm.GoForward, v => v.GoForwardBtn).DisposeWith(Disposables);
         this.BindCommand(ViewModel, vm => vm.Refresh, v => v.RefreshBtn).DisposeWith(Disposables);
         this.BindCommand(ViewModel, vm => vm.Stop, v => v.StopBtn).DisposeWith(Disposables);
-        this.BindCommand(ViewModel, vm => vm.ToggleSettingsDialogIsOpen, v => v.ConfigBtn).DisposeWith(Disposables);
+        this.BindCommand(ViewModel, vm => vm.ToggleSettingsDialogCommand, v => v.ConfigBtn).DisposeWith(Disposables);
 
         Observable.FromEventPattern<KeyRoutedEventArgs>(SearchBar, nameof(SearchBar.KeyDown))
             .Subscribe(ep => DetectEnterKey(ep.EventArgs.Key));
@@ -57,11 +57,6 @@ public sealed partial class AppTabViewItem : ReactiveAppTab, IDisposable
                 SettingsDialogContent.Height = WebView.ActualHeight - (2 * SettingsDialogContent.Margin.Top);
             });
 
-        this.WhenActivated(async d =>
-        {
-            await ActivateAsync();
-        });
-
         this.WhenAnyValue(x => x.SettingsView.ViewModel.HistoryPageViewModel)
             .WhereNotNull()
             .Select(vm => vm.Entries.Connect()
@@ -75,6 +70,11 @@ public sealed partial class AppTabViewItem : ReactiveAppTab, IDisposable
                 ViewModel!.SettingsDialogIsOpen = false;
             })
             .DisposeWith(Disposables);
+
+        this.WhenAnyValue(x => x.ViewModel!.Url)
+            .Where(url => url == Constants.AboutBlankUri)
+            .Subscribe(_ => SearchBar.Focus(FocusState.Programmatic))
+            .DisposeWith(Disposables);
     }
 
     private static string GetCorrectTitle(string title)
@@ -85,29 +85,25 @@ public sealed partial class AppTabViewItem : ReactiveAppTab, IDisposable
                             : title;
     }
 
-    public async Task ActivateAsync()
-    {
-        WebView.Focus(FocusState.Programmatic);
+    //public async Task ActivateAsync()
+    //{
+    //    WebView.Focus(FocusState.Programmatic);
 
-        if (WebView.Source is null &&
-            !string.IsNullOrWhiteSpace(SearchBar.Text) &&
-            Constants.AboutBlankUri.ToString() != SearchBar.Text)
-        {
-            ViewModel?.NavigateToSearchBarInput.Execute().Subscribe();
-        }
-        else if (ViewModel!.Url == Constants.AboutBlankUri)
-        {
-            SearchBar.Focus(FocusState.Programmatic);
-        }
+    //    if (WebView.Source is null &&
+    //        !string.IsNullOrWhiteSpace(SearchBar.Text) &&
+    //        Constants.AboutBlankUri.ToString() != SearchBar.Text)
+    //    {
+    //        ViewModel?.NavigateToSearchBarInput.Execute().Subscribe();
+    //    }
 
-        await Task.CompletedTask;
-    }
+    //    await Task.CompletedTask;
+    //}
 
     private void DetectEnterKey(VirtualKey key)
     {
         if (key == VirtualKey.Enter)
         {
-            ViewModel?.NavigateToSearchBarInput.Execute().Subscribe();
+            ViewModel?.NavigateToInputComman.Execute().Subscribe();
             WebView.Focus(FocusState.Programmatic);
         }
     }
