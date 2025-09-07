@@ -5,6 +5,6 @@ namespace Fluens.AppCore.Contracts;
 
 public interface ITabPage : IViewFor<AppPageViewModel>
 {
-    IViewFor<AppTabViewModel> CreateTabViewItem(AppTabViewModel vm);
+    void CreateTabViewItem(AppTabViewModel vm);
     bool HasTab(AppTabViewModel tab);
 }

@@ -23,7 +23,7 @@ public sealed partial class MainWindow : Window, IViewFor<MainWindowViewModel>
         Observable.FromEventPattern<RoutedEventArgs>(Page, nameof(Page.Loaded))
             .Subscribe(ep => SetTitleBar(Page.TitleBar));
 
-        Page.HasNoTabs.Subscribe(_ => Close());
+        Page.ViewModel!.HasNoTabs.Subscribe(_ => Close());
     }
 
     public async Task ApplyOnStartupSettingAsync(OnStartupSetting onStartupSetting)
