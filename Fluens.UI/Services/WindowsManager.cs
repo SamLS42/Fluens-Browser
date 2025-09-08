@@ -5,6 +5,7 @@ using Fluens.AppCore.ViewModels;
 using Fluens.UI.Views;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
+using ReactiveUI;
 using System.Reactive.Linq;
 using Vanara.PInvoke;
 using WinRT.Interop;
@@ -105,9 +106,9 @@ public class WindowsManager(ILocalSettingService localSettingService, TabPersist
     //    return ActiveWindows.FirstOrDefault(w => element.XamlRoot == w.Content.XamlRoot);
     //}
 
-    public ITabPage GetParentTabPage(AppTabViewModel tab)
+    public IViewFor<AppPageViewModel> GetParentTabPage(AppTabViewModel tab)
     {
-        MainWindow? window = ActiveWindows.SingleOrDefault(window => window.TabPage.HasTab(tab));
+        MainWindow? window = ActiveWindows.SingleOrDefault(window => window.TabPage.ViewModel!.HasTab(tab));
 
         return window != null
             ? window.TabPage

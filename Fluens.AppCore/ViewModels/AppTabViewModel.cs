@@ -98,6 +98,7 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
             .Subscribe(async i => await TabPersistencyService.SetIsTabSelectedAsync(i.id, i.isSelected));
 
         this.WhenAnyValue(x => x.Url, x => x.FaviconUrl, x => x.DocumentTitle, (url, faviconUrl, documentTitle) => new { url, faviconUrl, documentTitle })
+            .Where(obj => obj.url != null)
             .Throttle(TimeSpan.FromSeconds(2))
             .Subscribe(async i => await HistoryService.AddEntryAsync(i.url, i.faviconUrl, i.documentTitle));
 
@@ -120,9 +121,9 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
                 ReactiveWebView.FaviconUrl.Subscribe(faviconUrl => FaviconUrl = faviconUrl);
                 ReactiveWebView.OpenNewTab.Subscribe(async uri =>
                 {
-                    ITabPage page = TabPageManager.GetParentTabPage(this);
+                    IViewFor<AppPageViewModel> page = TabPageManager.GetParentTabPage(this);
                     AppTabViewModel vm = await page.ViewModel!.CreateTabAsync(uri);
-                    page.CreateTabViewItem(vm);
+                    page.ViewModel.CreateTabViewItem(vm);
                     vm.WhenAnyValue(vm => vm.ReactiveWebView).WhereNotNull().Take(1).Subscribe(_ => vm.Activate());
                 });
                 ReactiveWebView.KeyboardShortcuts.Subscribe(KeyboardShortcutsSource.OnNext);

@@ -1,8 +1,8 @@
-using Fluens.AppCore.Contracts;
 using Fluens.AppCore.Enums;
 using Fluens.AppCore.ViewModels;
 using Microsoft.UI.Xaml;
 using ReactiveUI;
+using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using WinRT;
 
@@ -10,7 +10,8 @@ namespace Fluens.UI;
 
 public sealed partial class MainWindow : Window, IViewFor<MainWindowViewModel>
 {
-    public ITabPage TabPage => Page;
+    readonly CompositeDisposable disposables = [];
+    public IViewFor<AppPageViewModel> TabPage => Page;
 
     public MainWindowViewModel? ViewModel { get; set; }
     object? IViewFor.ViewModel { get => ViewModel; set => ViewModel = value.As<MainWindowViewModel>(); }
@@ -18,16 +19,28 @@ public sealed partial class MainWindow : Window, IViewFor<MainWindowViewModel>
     public MainWindow()
     {
         InitializeComponent();
+
         ExtendsContentIntoTitleBar = true;
 
-        Observable.FromEventPattern<RoutedEventArgs>(Page, nameof(Page.Loaded))
-            .Subscribe(ep => SetTitleBar(Page.TitleBar));
+        this.WhenAnyValue(x => x.ViewModel!.Id)
+            .Where(id => id != 0)
+            .Subscribe(id => Page.ViewModel?.WindowId = id)
+            .DisposeWith(disposables);
 
-        Page.ViewModel!.HasNoTabs.Subscribe(_ => Close());
+        Observable.FromEventPattern<RoutedEventArgs>(Page, nameof(Page.Loaded))
+            .Subscribe(ep => SetTitleBar(Page.TitleBar))
+            .DisposeWith(disposables);
+
+        Page.ViewModel!.HasNoTabs
+            .Subscribe(_ => Close())
+            .DisposeWith(disposables);
+
+        Observable.FromEventPattern<WindowEventArgs>(this, nameof(Closed))
+            .Subscribe(ep => disposables.Dispose());
     }
 
     public async Task ApplyOnStartupSettingAsync(OnStartupSetting onStartupSetting)
     {
-        await Page.ApplyOnStartupSettingAsync(onStartupSetting);
+        await Page.ViewModel!.ApplyOnStartupSettingAsync(onStartupSetting);
     }
 }
