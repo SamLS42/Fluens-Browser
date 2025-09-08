@@ -15,30 +15,21 @@ namespace Fluens.AppCore.ViewModels;
 
 public partial class AppPageViewModel : ReactiveObject, IDisposable
 {
-    private readonly TabPersistencyService dataService = ServiceLocator.GetRequiredService<TabPersistencyService>();
-
-    private readonly Subject<Unit> hasNoTabs = new();
-    public IObservable<Unit> HasNoTabs => hasNoTabs.AsObservable();
-
-    private readonly SourceCache<AppTabViewModel, int> tabsSource = new(vm => vm.Id);
-
-    public ObservableCollection<AppTabViewModel> TabsSource { get; } = []; //For some reason, adding tabs is faster (visually) when using TabItemsSource instead of using Items directly
-    public int WindowId { get; set; }
-
     [Reactive]
     public partial AppTabViewModel SelectedItem { get; set; } = null!;
+    public IObservable<Unit> HasNoTabs => hasNoTabs.AsObservable();
+    public ObservableCollection<AppTabViewModel> Tabs { get; } = []; //For some reason, adding tabs is faster (visually) when using TabItemsSource instead of using Items directly
+    public int WindowId { get; set; }
 
     public AppPageViewModel()
     {
-        Observable.FromEventPattern<NotifyCollectionChangedEventArgs>(TabsSource, nameof(TabsSource.CollectionChanged))
+        Observable.FromEventPattern<NotifyCollectionChangedEventArgs>(Tabs, nameof(Tabs.CollectionChanged))
             .Subscribe(_ =>
             {
-                if (TabsSource.Count == 0)
+                if (Tabs.Count == 0)
                 {
                     hasNoTabs.OnNext(Unit.Default);
                 }
-
-                tabsSource.EditDiff(TabsSource, areItemsEqual: (i1, i2) => i1.Id == i2.Id);
 
                 UpdateTabIndexes();
             });
@@ -47,15 +38,18 @@ public partial class AppPageViewModel : ReactiveObject, IDisposable
             .WhereNotNull()
             .Subscribe(_ =>
             {
-                SelectedItem.IsSelected = true;
-
-                foreach (AppTabViewModel item in TabsSource.Except([SelectedItem]))
+                foreach (AppTabViewModel item in Tabs.Except([SelectedItem]))
                 {
                     item.IsSelected = false;
                 }
+
+                SelectedItem.IsSelected = true;
             });
     }
 
+    private readonly TabPersistencyService dataService = ServiceLocator.GetRequiredService<TabPersistencyService>();
+
+    private readonly Subject<Unit> hasNoTabs = new();
 
     public async Task ApplyOnStartupSettingAsync(OnStartupSetting onStartupSetting)
     {
@@ -79,46 +73,9 @@ public partial class AppPageViewModel : ReactiveObject, IDisposable
                 break;
         }
 
-        if (TabsSource.Count == 0)
+        if (Tabs.Count == 0)
         {
             await CreateNewTab();
-        }
-    }
-
-    private async Task RecoverStateAsync()
-    {
-        foreach (AppTabViewModel vm in await RecoverTabsAsync())
-        {
-            CreateTabViewItem(vm);
-        }
-
-        SelectedItem = TabsSource.First(item => item.IsSelected);
-    }
-
-    private async Task CreateNewTab()
-    {
-        AppTabViewModel vm = await CreateTabAsync();
-        CreateTabViewItem(vm);
-        SelectedItem = vm;
-    }
-
-    private async Task RestoreClosedTabAsync()
-    {
-        AppTabViewModel? vm = await GetClosedTabAsync();
-
-        if (vm is null)
-        {
-            return;
-        }
-
-        SelectedItem = vm;
-    }
-
-    private void UpdateTabIndexes()
-    {
-        foreach (AppTabViewModel vm in TabsSource)
-        {
-            vm.Index = TabsSource.IndexOf(vm);
         }
     }
 
@@ -126,53 +83,29 @@ public partial class AppPageViewModel : ReactiveObject, IDisposable
     {
         if (vm.Index != null)
         {
-            TabsSource.Insert(vm.Index.Value, vm);
+            Tabs.Insert(vm.Index.Value, vm);
         }
         else
         {
-            TabsSource.Add(vm);
+            Tabs.Add(vm);
         }
     }
 
     public async Task CloseTabAsync(AppTabViewModel vm)
     {
-        TabsSource.Remove(vm);
+        Tabs.Remove(vm);
         await dataService.CloseTabAsync(vm.Id);
         vm.Dispose();
     }
 
     public bool HasTab(AppTabViewModel tab)
     {
-        return TabsSource.Any(t => t == tab);
-    }
-
-    public async Task<AppTabViewModel[]> RecoverTabsAsync()
-    {
-        BrowserTab[] tabs = await dataService.RecoverTabsAsync();
-
-        return [.. tabs.Select(tab => tab.ToAppTabViewModel(WindowId))];
-    }
-
-    public async Task<AppTabViewModel?> GetClosedTabAsync()
-    {
-        BrowserTab? tab = await dataService.GetClosedTabAsync();
-
-        if (tab == null)
-        {
-            return null;
-        }
-
-        return tab.ToAppTabViewModel(WindowId);
-    }
-
-    public async Task<int> GetNewTabId()
-    {
-        return await dataService.CreateTabAsync(Constants.AboutBlankUri, WindowId);
+        return Tabs.Any(t => t == tab);
     }
 
     public async Task<AppTabViewModel> CreateTabAsync(Uri? uri = null)
     {
-        int id = await GetNewTabId();
+        int id = await dataService.CreateTabAsync(Constants.AboutBlankUri, WindowId);
 
         AppTabViewModel vm = new()
         {
@@ -218,13 +151,57 @@ public partial class AppPageViewModel : ReactiveObject, IDisposable
         GC.SuppressFinalize(this);
     }
 
+    private async Task RecoverStateAsync()
+    {
+        BrowserTab[] tabs = await dataService.RecoverTabsAsync();
+
+        foreach (BrowserTab tab in tabs)
+        {
+            AppTabViewModel vm = tab.ToAppTabViewModel();
+            vm.ParentWindowId = WindowId;
+            CreateTabViewItem(vm);
+        }
+
+        SelectedItem = Tabs.First(item => item.IsSelected);
+    }
+
+    private async Task CreateNewTab()
+    {
+        AppTabViewModel vm = await CreateTabAsync();
+        CreateTabViewItem(vm);
+        SelectedItem = vm;
+    }
+
+    private async Task RestoreClosedTabAsync()
+    {
+        BrowserTab? tab = await dataService.GetClosedTabAsync();
+
+        if (tab == null)
+        {
+            return;
+        }
+
+        AppTabViewModel vm = tab.ToAppTabViewModel();
+
+        vm.ParentWindowId = WindowId;
+
+        SelectedItem = vm;
+    }
+
+    private void UpdateTabIndexes()
+    {
+        foreach (AppTabViewModel vm in Tabs)
+        {
+            vm.Index = Tabs.IndexOf(vm);
+        }
+    }
+
     protected virtual void Dispose(bool dispose)
     {
         if (dispose)
         {
             hasNoTabs.OnCompleted();
             hasNoTabs.Dispose();
-            tabsSource.Dispose();
         }
     }
 }

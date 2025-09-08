@@ -2,7 +2,6 @@ using DynamicData;
 using Fluens.AppCore.Helpers;
 using Fluens.AppCore.ViewModels;
 using Fluens.UI.Helpers;
-using Fluens.UI.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -19,8 +18,6 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable
     readonly CompositeDisposable disposables = [];
     public UIElement TitleBar => CustomDragRegion;
 
-    private WindowsManager WindowsManager { get; } = ServiceLocator.GetRequiredService<WindowsManager>();
-
     public AppPage()
     {
         InitializeComponent();
@@ -29,7 +26,7 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable
 
         ViewModel ??= ServiceLocator.GetRequiredService<AppPageViewModel>();
 
-        this.OneWayBind(ViewModel, vm => vm.TabsSource, v => v.tabView.TabItemsSource);
+        this.OneWayBind(ViewModel, vm => vm.Tabs, v => v.tabView.TabItemsSource);
 
         this.Bind(ViewModel, vm => vm.SelectedItem, v => v.tabView.SelectedItem);
 
@@ -42,9 +39,9 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable
         Observable.FromEventPattern<TabView, TabViewTabCloseRequestedEventArgs>(tabView, nameof(tabView.TabCloseRequested))
             .Subscribe(async pattern => await ViewModel.CloseTabAsync((AppTabViewModel)pattern.EventArgs.Item));
 
-        Observable.FromEventPattern<NotifyCollectionChangedEventArgs>(ViewModel.TabsSource, nameof(ViewModel.TabsSource.CollectionChanged))
+        Observable.FromEventPattern<NotifyCollectionChangedEventArgs>(ViewModel.Tabs, nameof(ViewModel.Tabs.CollectionChanged))
             .Where(ep => ep.EventArgs.Action != NotifyCollectionChangedAction.Move)
-            .SelectMany(_ => ViewModel.TabsSource.Select(vm => vm.KeyboardShortcuts))
+            .SelectMany(_ => ViewModel.Tabs.Select(vm => vm.KeyboardShortcuts))
             .Switch()
             .Subscribe(async s => await ViewModel.HandleKeyboardShortcutAsync(s))
             .DisposeWith(disposables);
@@ -53,6 +50,7 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable
     public void Dispose()
     {
         disposables.Dispose();
+        ViewModel?.Dispose();
     }
 
     private void KeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
