@@ -104,7 +104,7 @@ public partial class AppPageViewModel : ReactiveObject, IDisposable
 
     public bool HasTab(AppTabViewModel tab)
     {
-        return Tabs.Any(t => t == tab);
+        return Tabs.Any(t => t.ViewModel == tab);
     }
 
     public async Task<AppTabViewModel> CreateTabAsync(Uri? uri = null)
