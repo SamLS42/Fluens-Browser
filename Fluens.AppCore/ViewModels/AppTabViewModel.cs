@@ -21,7 +21,7 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
     public partial int Id { get; set; }
 
     [Reactive]
-    public partial IReactiveWebView ReactiveWebView { get; set; } = null!;
+    public partial IReactiveWebView? ReactiveWebView { get; set; }
 
     [Reactive]
     public partial string DocumentTitle { get; set; } = string.Empty;
@@ -110,7 +110,7 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
             .WhereNotNull()
             .Subscribe(_ =>
             {
-                GoBack = ReactiveCommand.Create(ReactiveWebView.GoBack);
+                GoBack = ReactiveCommand.Create(ReactiveWebView!.GoBack);
                 GoForward = ReactiveCommand.Create(ReactiveWebView.GoForward);
                 Refresh = ReactiveCommand.Create(ReactiveWebView.Refresh);
                 Stop = ReactiveCommand.Create(ReactiveWebView.StopNavigation);
@@ -123,8 +123,8 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
                 {
                     IViewFor<AppPageViewModel> page = TabPageManager.GetParentTabPage(this);
                     AppTabViewModel vm = await page.ViewModel!.CreateTabAsync(uri);
-                    page.ViewModel.CreateTabViewItem(vm);
-                    vm.WhenAnyValue(vm => vm.ReactiveWebView).WhereNotNull().Take(1).Subscribe(_ => vm.Activate());
+                    var tab = page.ViewModel.CreateTabViewItem(vm);
+                    page.ViewModel.SelectedItem = tab;
                 });
                 ReactiveWebView.KeyboardShortcuts.Subscribe(KeyboardShortcutsSource.OnNext);
             });
@@ -180,12 +180,12 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
 
     public void Activate()
     {
-        if (Url == Constants.AboutBlankUri && ReactiveWebView.Source is null)
+        if (Url == Constants.AboutBlankUri && ReactiveWebView!.Source is null)
         {
             return;
         }
 
-        if (Url != ReactiveWebView.Source)
+        if (Url != ReactiveWebView!.Source)
         {
             ReactiveWebView.NavigateToUrl(Url);
         }
@@ -224,7 +224,7 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
     {
         if (dispose)
         {
-            ReactiveWebView.Dispose();
+            ReactiveWebView?.Dispose();
         }
     }
 }

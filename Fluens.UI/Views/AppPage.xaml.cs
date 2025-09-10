@@ -26,22 +26,26 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable
 
         ViewModel ??= ServiceLocator.GetRequiredService<AppPageViewModel>();
 
-        this.OneWayBind(ViewModel, vm => vm.Tabs, v => v.tabView.TabItemsSource);
+        this.OneWayBind(ViewModel, vm => vm.Tabs, v => v.tabView.TabItemsSource)
+            .DisposeWith(disposables);
 
-        this.Bind(ViewModel, vm => vm.SelectedItem, v => v.tabView.SelectedItem);
+        this.Bind(ViewModel, vm => vm.SelectedItem, v => v.tabView.SelectedItem)
+            .DisposeWith(disposables);
 
         Observable.FromEventPattern<TabView, object>(tabView, nameof(tabView.AddTabButtonClick))
             .Subscribe(async _ =>
             {
                 await ViewModel!.CreateNewTabAsync();
-            });
+            })
+            .DisposeWith(disposables);
 
         Observable.FromEventPattern<TabView, TabViewTabCloseRequestedEventArgs>(tabView, nameof(tabView.TabCloseRequested))
-            .Subscribe(async pattern => await ViewModel.CloseTabAsync((AppTabViewModel)pattern.EventArgs.Item));
+            .Subscribe(async pattern => await ViewModel.CloseTabAsync((IViewFor<AppTabViewModel>)pattern.EventArgs.Item))
+            .DisposeWith(disposables);
 
         Observable.FromEventPattern<NotifyCollectionChangedEventArgs>(ViewModel.Tabs, nameof(ViewModel.Tabs.CollectionChanged))
             .Where(ep => ep.EventArgs.Action != NotifyCollectionChangedAction.Move)
-            .SelectMany(_ => ViewModel.Tabs.Select(vm => vm.KeyboardShortcuts))
+            .SelectMany(_ => ViewModel.Tabs.Select(tab => tab.ViewModel!.KeyboardShortcuts))
             .Switch()
             .Subscribe(async s => await ViewModel.HandleKeyboardShortcutAsync(s))
             .DisposeWith(disposables);

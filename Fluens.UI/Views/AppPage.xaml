@@ -10,21 +10,10 @@
     xmlns:viewmodels="using:Fluens.AppCore.ViewModels"
     mc:Ignorable="d">
 
-    <local:ReactiveAppPage.Resources>
-        <DataTemplate x:Key="TabViewItemTemplate" x:DataType="viewmodels:AppTabViewModel">
-            <TabViewItem Header="{x:Bind DocumentTitle, Mode=OneWay, Converter={StaticResource StringToTabHeaderConverter}}" IconSource="{x:Bind FaviconUrl, Mode=OneWay, Converter={StaticResource StringToIconSourceConverter}}">
-                <TabViewItem.Content>
-                    <local:AppTabContent ViewModel="{x:Bind}" />
-                </TabViewItem.Content>
-            </TabViewItem>
-        </DataTemplate>
-    </local:ReactiveAppPage.Resources>
-
     <TabView
         x:Name="tabView"
         VerticalAlignment="Stretch"
-        Background="{ThemeResource SolidBackgroundFillColorSecondaryBrush}"
-        TabItemTemplate="{StaticResource TabViewItemTemplate}">
+        Background="{ThemeResource SolidBackgroundFillColorSecondaryBrush}">
         <TabView.TabStripHeader>
             <Grid x:Name="ShellTitleBarInset" Background="Transparent" />
         </TabView.TabStripHeader>

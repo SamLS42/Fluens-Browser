@@ -47,6 +47,7 @@ public partial class App : Application
                     .AddTransient<SettingsViewModel>()
                     .AddSingleton<WindowsManager>()
                     .AddSingleton<ITabPageManager, TabViewsManager>()
+                    .AddSingleton<IViewForFactory, ViewForFactory>()
                     .AddSingleton<TabPersistencyService>()
                     .AddSingleton<BrowserWindowService>()
                     .AddSingleton<HistoryService>()

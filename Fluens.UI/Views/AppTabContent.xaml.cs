@@ -20,14 +20,19 @@ public sealed partial class AppTabContent : ReactiveAppTab, IDisposable
     {
         InitializeComponent();
 
+        this.WhenActivated(async d =>
+        {
+            await ActivateAsync();
+        });
+
         this.WhenAnyValue(x => x.ViewModel)
             .WhereNotNull()
-            .Subscribe(vm => vm.ReactiveWebView = WebView)
+            .Subscribe(vm => vm.ReactiveWebView = new ReactiveWebView(WebView))
             .DisposeWith(Disposables);
 
         Observable.FromEventPattern<WebView2, CoreWebView2NavigationCompletedEventArgs>(WebView, nameof(WebView.NavigationCompleted))
-            .Subscribe(ep => WebView.Focus(FocusState.Programmatic))
-            .DisposeWith(Disposables);
+                .Subscribe(ep => WebView.Focus(FocusState.Programmatic))
+                .DisposeWith(Disposables);
 
         this.Bind(ViewModel, vm => vm.SearchBarText, v => v.SearchBar.Text).DisposeWith(Disposables);
 
@@ -35,6 +40,8 @@ public sealed partial class AppTabContent : ReactiveAppTab, IDisposable
         this.OneWayBind(ViewModel, vm => vm.SettingsDialogIsOpen, v => v.ConfigBtn.IsChecked).DisposeWith(Disposables);
         this.OneWayBind(ViewModel, vm => vm.CanStop, v => v.StopBtn.Visibility).DisposeWith(Disposables);
         this.OneWayBind(ViewModel, vm => vm.CanRefresh, v => v.RefreshBtn.Visibility).DisposeWith(Disposables);
+        this.OneWayBind(ViewModel, vm => vm.FaviconUrl, v => v.IconSource, IconSource.GetFromUrl).DisposeWith(Disposables);
+        this.OneWayBind(ViewModel, vm => vm.DocumentTitle, v => v.Header, GetCorrectTitle).DisposeWith(Disposables);
 
         this.BindCommand(ViewModel, vm => vm.GoBack, v => v.GoBackBtn).DisposeWith(Disposables);
         this.BindCommand(ViewModel, vm => vm.GoForward, v => v.GoForwardBtn).DisposeWith(Disposables);
@@ -43,17 +50,17 @@ public sealed partial class AppTabContent : ReactiveAppTab, IDisposable
         this.BindCommand(ViewModel, vm => vm.ToggleSettingsDialogCommand, v => v.ConfigBtn).DisposeWith(Disposables);
 
         Observable.FromEventPattern<KeyRoutedEventArgs>(SearchBar, nameof(SearchBar.KeyDown))
-            .Subscribe(ep => DetectEnterKey(ep.EventArgs.Key));
+                .Subscribe(ep => DetectEnterKey(ep.EventArgs.Key));
 
         Observable.FromEventPattern<RoutedEventArgs>(SearchBar, nameof(SearchBar.GotFocus))
-            .Subscribe(_ => SearchBar.SelectAll());
+                .Subscribe(_ => SearchBar.SelectAll());
 
-        //Observable.FromEventPattern<SizeChangedEventArgs>(WebView, nameof(WebView.SizeChanged))
-        //    .Subscribe(ep =>
-        //    {
-        //        SettingsDialogContent.Width = WebView.ActualWidth - (2 * SettingsDialogContent.Margin.Left);
-        //        SettingsDialogContent.Height = WebView.ActualHeight - (2 * SettingsDialogContent.Margin.Top);
-        //    });
+        Observable.FromEventPattern<SizeChangedEventArgs>(WebView, nameof(WebView.SizeChanged))
+            .Subscribe(ep =>
+            {
+                SettingsDialogContent.Width = WebView.ActualWidth - (2 * SettingsDialogContent.Margin.Left);
+                SettingsDialogContent.Height = WebView.ActualHeight - (2 * SettingsDialogContent.Margin.Top);
+            });
 
         this.WhenAnyValue(x => x.SettingsView.ViewModel.HistoryPageViewModel)
             .WhereNotNull()
@@ -75,6 +82,11 @@ public sealed partial class AppTabContent : ReactiveAppTab, IDisposable
             .DisposeWith(Disposables);
     }
 
+    private async Task ActivateAsync()
+    {
+        await WebView.EnsureCoreWebView2Async();
+    }
+
     private void DetectEnterKey(VirtualKey key)
     {
         if (key == VirtualKey.Enter)
@@ -84,11 +96,22 @@ public sealed partial class AppTabContent : ReactiveAppTab, IDisposable
         }
     }
 
+    private static string GetCorrectTitle(string title)
+    {
+        return string.IsNullOrWhiteSpace(title)
+                            || title.Equals(Constants.AboutBlankUri.ToString(), StringComparison.Ordinal)
+                            ? Constants.NewTabTitle
+                            : title;
+    }
+
     public void Dispose()
     {
         Disposables.Dispose();
         ViewModel?.Dispose();
     }
 }
-
-public partial class ReactiveAppTab : ReactiveUserControl<AppTabViewModel>;
+public partial class ReactiveAppTab : TabViewItem, IViewFor<AppTabViewModel>, IActivatableView
+{
+    public AppTabViewModel? ViewModel { get; set; }
+    object? IViewFor.ViewModel { get => ViewModel; set { ViewModel = (AppTabViewModel?)value; } }
+}
