@@ -5,11 +5,13 @@ using Fluens.UI.Helpers;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.Web.WebView2.Core;
 using ReactiveUI;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using Windows.System;
+using Windows.UI;
 
 namespace Fluens.UI.Views;
 
@@ -79,6 +81,24 @@ public sealed partial class AppTabContent : ReactiveAppTab, IDisposable
         this.WhenAnyValue(x => x.ViewModel!.Url)
             .Where(url => url == Constants.AboutBlankUri)
             .Subscribe(_ => SearchBar.Focus(FocusState.Programmatic))
+            .DisposeWith(Disposables);
+
+        this.WhenAnyValue(x => x.ViewModel!.Url)
+            .Select(url => url == Constants.AboutBlankUri)
+            .Subscribe(isBlank =>
+            {
+                Color brush;
+
+                if (isBlank)
+                {
+                    brush = (Color)Application.Current.Resources["SolidBackgroundFillColorTertiary"];
+                }
+                else
+                {
+                    brush = (Color)Application.Current.Resources["SystemChromeWhiteColor"];
+                }
+                WebView.DefaultBackgroundColor = brush;
+            })
             .DisposeWith(Disposables);
     }
 
