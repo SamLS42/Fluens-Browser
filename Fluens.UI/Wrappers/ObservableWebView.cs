@@ -11,7 +11,7 @@ using System.Text.Json;
 
 namespace Fluens.UI.Helpers;
 
-public sealed partial class ReactiveWebView : IReactiveWebView
+public sealed partial class ObservableWebView : IObservableWebView
 {
     private readonly CompositeDisposable Disposables = [];
     private readonly WebView2 WebView;
@@ -32,7 +32,7 @@ public sealed partial class ReactiveWebView : IReactiveWebView
 
     public Uri? Source => WebView.Source;
 
-    public ReactiveWebView(WebView2 webView)
+    public ObservableWebView(WebView2 webView)
     {
         WebView = webView;
 
@@ -180,7 +180,7 @@ window.addEventListener('keydown', function (e) {
 
     //Used by the LoggerMessage
 #pragma warning disable CA1823 // Avoid unused private fields
-    private readonly ILogger _logger = ServiceLocator.GetRequiredService<ILogger<ReactiveWebView>>();
+    private readonly ILogger _logger = ServiceLocator.GetRequiredService<ILogger<ObservableWebView>>();
 #pragma warning restore CA1823 // Avoid unused private fields
 
     [LoggerMessage(Level = LogLevel.Error, Message = "ShortcutMessage Deserialization Error: {webMessageAsJson}")]

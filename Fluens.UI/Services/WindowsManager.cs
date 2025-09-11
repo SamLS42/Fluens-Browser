@@ -14,11 +14,12 @@ namespace Fluens.UI.Services;
 
 public class WindowsManager(ILocalSettingService localSettingService, TabPersistencyService TabPersistencyService, BrowserWindowService browserWindowService)
 {
-    public MainWindow CreateWindow()
+    public MainWindow CreateWindow(int id)
     {
         MainWindow newWindow = new()
         {
             SystemBackdrop = new MicaBackdrop(),
+            ViewModel = new() { Id = id },
         };
         TrackWindow(newWindow);
         return newWindow;

@@ -22,11 +22,6 @@ public sealed partial class MainWindow : Window, IViewFor<MainWindowViewModel>
 
         ExtendsContentIntoTitleBar = true;
 
-        this.WhenAnyValue(x => x.ViewModel!.Id)
-            .Where(id => id != 0)
-            .Subscribe(id => Page.ViewModel?.WindowId = id)
-            .DisposeWith(disposables);
-
         Observable.FromEventPattern<RoutedEventArgs>(Page, nameof(Page.Loaded))
             .Subscribe(ep => SetTitleBar(Page.TitleBar))
             .DisposeWith(disposables);
@@ -41,6 +36,7 @@ public sealed partial class MainWindow : Window, IViewFor<MainWindowViewModel>
 
     public async Task ApplyOnStartupSettingAsync(OnStartupSetting onStartupSetting)
     {
+        Page.ViewModel?.WindowId = ViewModel!.Id;
         await Page.ViewModel!.ApplyOnStartupSettingAsync(onStartupSetting);
     }
 }

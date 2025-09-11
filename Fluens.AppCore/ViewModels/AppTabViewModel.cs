@@ -21,7 +21,7 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
     public partial int Id { get; set; }
 
     [Reactive]
-    public partial IReactiveWebView? ReactiveWebView { get; set; }
+    public partial IObservableWebView? ReactiveWebView { get; set; }
 
     [Reactive]
     public partial string DocumentTitle { get; set; } = string.Empty;
@@ -123,8 +123,8 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
                 {
                     IViewFor<AppPageViewModel> page = TabPageManager.GetParentTabPage(this);
                     AppTabViewModel vm = await page.ViewModel!.CreateTabAsync(uri);
-                    var tab = page.ViewModel.CreateTabViewItem(vm);
-                    page.ViewModel.SelectedItem = tab;
+                    page.ViewModel.CreateTabViewItem(vm);
+                    page.ViewModel.SelectItem(vm);
                 });
                 ReactiveWebView.KeyboardShortcuts.Subscribe(KeyboardShortcutsSource.OnNext);
             });

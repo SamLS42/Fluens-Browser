@@ -47,7 +47,6 @@ public partial class App : Application
                     .AddTransient<SettingsViewModel>()
                     .AddSingleton<WindowsManager>()
                     .AddSingleton<ITabPageManager, TabViewsManager>()
-                    .AddSingleton<IViewForFactory, ViewForFactory>()
                     .AddSingleton<TabPersistencyService>()
                     .AddSingleton<BrowserWindowService>()
                     .AddSingleton<HistoryService>()
@@ -69,9 +68,7 @@ public partial class App : Application
 
         await ApplyDbMigrations();
 
-        MainWindow window = ServiceLocator.GetRequiredService<WindowsManager>().CreateWindow();
-        await ApplyOnStartupSetting(window);
-        window.Activate();
+        await ApplyOnStartupSetting();
     }
 
     private static async Task ApplyDbMigrations()
@@ -81,18 +78,21 @@ public partial class App : Application
         await dbContext.Database.MigrateAsync();
     }
 
-    private async Task ApplyOnStartupSetting(MainWindow window)
+    private async Task ApplyOnStartupSetting()
     {
         ILocalSettingService localSetting = ServiceLocator.GetRequiredService<ILocalSettingService>();
         OnStartupSetting onStartupSetting = await localSetting.OnStartupSettingChanges.Take(1);
 
+        MainWindow? window = null;
+
+        BrowserWindowService browserWindowService = ServiceLocator.GetRequiredService<BrowserWindowService>();
+
         if (onStartupSetting is OnStartupSetting.RestoreOpenTabs or OnStartupSetting.RestoreAndOpenNewTab)
         {
-            BrowserWindowService browserWindowService = ServiceLocator.GetRequiredService<BrowserWindowService>();
             BrowserWindow? lastWindow = await browserWindowService.GetLastWindowAsync();
             if (lastWindow is not null)
             {
-                window.ViewModel = new() { Id = lastWindow.Id };
+                window = ServiceLocator.GetRequiredService<WindowsManager>().CreateWindow(lastWindow.Id);
                 AppWindow appWindow = window.AppWindow;
 
                 appWindow.Move(new PointInt32(lastWindow.X, lastWindow.Y));
@@ -103,13 +103,15 @@ public partial class App : Application
                     presenter.Maximize();
                 }
             }
-            else
-            {
-                int newWindowId = await browserWindowService.CreateWindowAsync();
-                window.ViewModel = new() { Id = newWindowId };
-            }
+        }
+
+        if (window is null)
+        {
+            int newWindowId = await browserWindowService.CreateWindowAsync();
+            window = ServiceLocator.GetRequiredService<WindowsManager>().CreateWindow(newWindowId);
         }
 
         await window.ApplyOnStartupSettingAsync(onStartupSetting);
+        window.Activate();
     }
 }

@@ -12,6 +12,13 @@
 		<Platforms>x64</Platforms>
 		<RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
 		<PlatformTarget>x64</PlatformTarget>
+		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+		<LangVersion>Preview</LangVersion>
+		<AnalysisLevel>latest</AnalysisLevel>
+		<AnalysisMode>all</AnalysisMode>
+		<CodeAnalysisTreatWarningsAsErrors>true</CodeAnalysisTreatWarningsAsErrors>
+		<EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+		<ImplicitUsings>true</ImplicitUsings>
 	</PropertyGroup>
 	<ItemGroup>
 		<None Remove="Views\AppPage.xaml" />

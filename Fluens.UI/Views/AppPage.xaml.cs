@@ -1,12 +1,10 @@
-using DynamicData;
 using Fluens.AppCore.Helpers;
 using Fluens.AppCore.ViewModels;
 using Fluens.UI.Helpers;
+using Fluens.UI.Wrappers;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using ReactiveUI;
-using System.Collections.Specialized;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using Windows.System;
@@ -24,31 +22,9 @@ public sealed partial class AppPage : ReactiveAppPage, IDisposable
 
         VerticalAlignment = VerticalAlignment.Stretch;
 
-        ViewModel ??= ServiceLocator.GetRequiredService<AppPageViewModel>();
+        ObservableTabView observableTabView = new(tabView);
 
-        this.OneWayBind(ViewModel, vm => vm.Tabs, v => v.tabView.TabItemsSource)
-            .DisposeWith(disposables);
-
-        this.Bind(ViewModel, vm => vm.SelectedItem, v => v.tabView.SelectedItem)
-            .DisposeWith(disposables);
-
-        Observable.FromEventPattern<TabView, object>(tabView, nameof(tabView.AddTabButtonClick))
-            .Subscribe(async _ =>
-            {
-                await ViewModel!.CreateNewTabAsync();
-            })
-            .DisposeWith(disposables);
-
-        Observable.FromEventPattern<TabView, TabViewTabCloseRequestedEventArgs>(tabView, nameof(tabView.TabCloseRequested))
-            .Subscribe(async pattern => await ViewModel.CloseTabAsync((IViewFor<AppTabViewModel>)pattern.EventArgs.Item))
-            .DisposeWith(disposables);
-
-        Observable.FromEventPattern<NotifyCollectionChangedEventArgs>(ViewModel.Tabs, nameof(ViewModel.Tabs.CollectionChanged))
-            .Where(ep => ep.EventArgs.Action != NotifyCollectionChangedAction.Move)
-            .SelectMany(_ => ViewModel.Tabs.Select(tab => tab.ViewModel!.KeyboardShortcuts))
-            .Switch()
-            .Subscribe(async s => await ViewModel.HandleKeyboardShortcutAsync(s))
-            .DisposeWith(disposables);
+        ViewModel = new AppPageViewModel(observableTabView);
     }
 
     public void Dispose()

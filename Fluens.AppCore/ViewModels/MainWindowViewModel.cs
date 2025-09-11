@@ -1,10 +1,6 @@
-﻿using ReactiveUI;
-using ReactiveUI.SourceGenerators;
+﻿namespace Fluens.AppCore.ViewModels;
 
-namespace Fluens.AppCore.ViewModels;
-
-public partial class MainWindowViewModel : ReactiveObject
+public partial class MainWindowViewModel
 {
-    [Reactive]
-    public partial int Id { get; set; }
+    public int Id { get; set; }
 }

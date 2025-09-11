@@ -5,7 +5,6 @@ using Fluens.UI.Helpers;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
 using Microsoft.Web.WebView2.Core;
 using ReactiveUI;
 using System.Reactive.Disposables;
@@ -15,6 +14,7 @@ using Windows.UI;
 
 namespace Fluens.UI.Views;
 
+public partial class ReactiveAppTab : ReactiveUserControl<AppTabViewModel>;
 public sealed partial class AppTabContent : ReactiveAppTab, IDisposable
 {
     private readonly CompositeDisposable Disposables = [];
@@ -25,11 +25,16 @@ public sealed partial class AppTabContent : ReactiveAppTab, IDisposable
         this.WhenActivated(async d =>
         {
             await ActivateAsync();
+
+            this.WhenAnyValue(x => x.ViewModel!.Url)
+                .Where(url => url == Constants.AboutBlankUri || url is null)
+                .Subscribe(_ => SearchBar.Focus(FocusState.Programmatic))
+                .DisposeWith(d);
         });
 
         this.WhenAnyValue(x => x.ViewModel)
             .WhereNotNull()
-            .Subscribe(vm => vm.ReactiveWebView = new ReactiveWebView(WebView))
+            .Subscribe(vm => vm.ReactiveWebView = new ObservableWebView(WebView))
             .DisposeWith(Disposables);
 
         Observable.FromEventPattern<WebView2, CoreWebView2NavigationCompletedEventArgs>(WebView, nameof(WebView.NavigationCompleted))
@@ -42,8 +47,8 @@ public sealed partial class AppTabContent : ReactiveAppTab, IDisposable
         this.OneWayBind(ViewModel, vm => vm.SettingsDialogIsOpen, v => v.ConfigBtn.IsChecked).DisposeWith(Disposables);
         this.OneWayBind(ViewModel, vm => vm.CanStop, v => v.StopBtn.Visibility).DisposeWith(Disposables);
         this.OneWayBind(ViewModel, vm => vm.CanRefresh, v => v.RefreshBtn.Visibility).DisposeWith(Disposables);
-        this.OneWayBind(ViewModel, vm => vm.FaviconUrl, v => v.IconSource, IconSource.GetFromUrl).DisposeWith(Disposables);
-        this.OneWayBind(ViewModel, vm => vm.DocumentTitle, v => v.Header, GetCorrectTitle).DisposeWith(Disposables);
+        //this.OneWayBind(ViewModel, vm => vm.FaviconUrl, v => v.IconSource, IconSource.GetFromUrl).DisposeWith(Disposables);
+        //this.OneWayBind(ViewModel, vm => vm.DocumentTitle, v => v.Header, GetCorrectTitle).DisposeWith(Disposables);
 
         this.BindCommand(ViewModel, vm => vm.GoBack, v => v.GoBackBtn).DisposeWith(Disposables);
         this.BindCommand(ViewModel, vm => vm.GoForward, v => v.GoForwardBtn).DisposeWith(Disposables);
@@ -79,11 +84,6 @@ public sealed partial class AppTabContent : ReactiveAppTab, IDisposable
             .DisposeWith(Disposables);
 
         this.WhenAnyValue(x => x.ViewModel!.Url)
-            .Where(url => url == Constants.AboutBlankUri)
-            .Subscribe(_ => SearchBar.Focus(FocusState.Programmatic))
-            .DisposeWith(Disposables);
-
-        this.WhenAnyValue(x => x.ViewModel!.Url)
             .Select(url => url == Constants.AboutBlankUri)
             .Subscribe(isBlank =>
             {
@@ -116,22 +116,9 @@ public sealed partial class AppTabContent : ReactiveAppTab, IDisposable
         }
     }
 
-    private static string GetCorrectTitle(string title)
-    {
-        return string.IsNullOrWhiteSpace(title)
-                            || title.Equals(Constants.AboutBlankUri.ToString(), StringComparison.Ordinal)
-                            ? Constants.NewTabTitle
-                            : title;
-    }
-
     public void Dispose()
     {
         Disposables.Dispose();
         ViewModel?.Dispose();
     }
-}
-public partial class ReactiveAppTab : TabViewItem, IViewFor<AppTabViewModel>, IActivatableView
-{
-    public AppTabViewModel? ViewModel { get; set; }
-    object? IViewFor.ViewModel { get => ViewModel; set { ViewModel = (AppTabViewModel?)value; } }
 }

@@ -2,7 +2,7 @@
 
 namespace Fluens.AppCore.Contracts;
 
-public interface IReactiveWebView : IDisposable
+public interface IObservableWebView : IDisposable
 {
     IObservable<string> DocumentTitle { get; }
     IObservable<string> FaviconUrl { get; }
