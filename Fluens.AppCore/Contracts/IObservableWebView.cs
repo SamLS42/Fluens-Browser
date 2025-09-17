@@ -15,5 +15,7 @@ public interface IObservableWebView : IDisposable
     void StopNavigation();
     void Refresh();
     void NavigateToUrl(Uri url);
+    Task ActivateAsync();
+
     Uri? Source { get; }
 }

@@ -1,5 +1,4 @@
-﻿using Fluens.AppCore.Helpers;
-using Fluens.AppCore.ViewModels;
+﻿using Fluens.AppCore.ViewModels;
 using System.Collections.ObjectModel;
 using System.Reactive;
 

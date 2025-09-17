@@ -21,7 +21,7 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
     public partial int Id { get; set; }
 
     [Reactive]
-    public partial IObservableWebView? ReactiveWebView { get; set; }
+    public partial IObservableWebView? ObservableWebView { get; set; }
 
     [Reactive]
     public partial string DocumentTitle { get; set; } = string.Empty;
@@ -106,30 +106,30 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
             .WhereNotNull()
             .Subscribe(_ => UpdateSearchBar());
 
-        this.WhenAnyValue(x => x.ReactiveWebView)
+        this.WhenAnyValue(x => x.ObservableWebView)
             .WhereNotNull()
             .Subscribe(_ =>
             {
-                GoBack = ReactiveCommand.Create(ReactiveWebView!.GoBack);
-                GoForward = ReactiveCommand.Create(ReactiveWebView.GoForward);
-                Refresh = ReactiveCommand.Create(ReactiveWebView.Refresh);
-                Stop = ReactiveCommand.Create(ReactiveWebView.StopNavigation);
+                GoBack = ReactiveCommand.Create(ObservableWebView!.GoBack);
+                GoForward = ReactiveCommand.Create(ObservableWebView.GoForward);
+                Refresh = ReactiveCommand.Create(ObservableWebView.Refresh);
+                Stop = ReactiveCommand.Create(ObservableWebView.StopNavigation);
 
-                ReactiveWebView.IsNavigating.Subscribe(SetStopRefreshVisibility);
-                ReactiveWebView.Url.Subscribe(url => Url = url);
-                ReactiveWebView.DocumentTitle.Subscribe(documentTitle => DocumentTitle = documentTitle);
-                ReactiveWebView.FaviconUrl.Subscribe(faviconUrl => FaviconUrl = faviconUrl);
-                ReactiveWebView.OpenNewTab.Subscribe(async uri =>
+                ObservableWebView.IsNavigating.Subscribe(SetStopRefreshVisibility);
+                ObservableWebView.Url.Subscribe(url => Url = url);
+                ObservableWebView.DocumentTitle.Subscribe(documentTitle => DocumentTitle = documentTitle);
+                ObservableWebView.FaviconUrl.Subscribe(faviconUrl => FaviconUrl = faviconUrl);
+                ObservableWebView.OpenNewTab.Subscribe(async uri =>
                 {
                     IViewFor<AppPageViewModel> page = TabPageManager.GetParentTabPage(this);
                     AppTabViewModel vm = await page.ViewModel!.CreateTabAsync(uri);
                     page.ViewModel.CreateTabViewItem(vm);
-                    page.ViewModel.SelectItem(vm);
+                    vm.Activate();
                 });
-                ReactiveWebView.KeyboardShortcuts.Subscribe(KeyboardShortcutsSource.OnNext);
+                ObservableWebView.KeyboardShortcuts.Subscribe(KeyboardShortcutsSource.OnNext);
             });
 
-        this.WhenAnyValue(x => x.IsSelected, x => x.ReactiveWebView, (isSelected, web) => isSelected && web != null)
+        this.WhenAnyValue(x => x.IsSelected, x => x.ObservableWebView, (isSelected, web) => isSelected && web != null)
             .DistinctUntilChanged()
             .Where(ready => ready)
             .Subscribe(_ => Activate());
@@ -175,20 +175,28 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
             url = new Uri($"https://duckduckgo.com/?q={query}");
         }
 
-        ReactiveWebView?.NavigateToUrl(url);
+        ObservableWebView?.NavigateToUrl(url);
     }
 
     public void Activate()
     {
-        if (Url == Constants.AboutBlankUri && ReactiveWebView!.Source is null)
-        {
-            return;
-        }
+        this.WhenAnyValue(x => x.ObservableWebView)
+            .WhereNotNull()
+            .Take(1)
+            .Subscribe(async wv =>
+            {
+                await wv.ActivateAsync();
 
-        if (Url != ReactiveWebView!.Source)
-        {
-            ReactiveWebView.NavigateToUrl(Url);
-        }
+                if (Url == Constants.AboutBlankUri && ObservableWebView!.Source is null)
+                {
+                    return;
+                }
+
+                if (Url != ObservableWebView!.Source)
+                {
+                    ObservableWebView.NavigateToUrl(Url);
+                }
+            });
     }
 
     private void UpdateSearchBar()
@@ -224,7 +232,7 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
     {
         if (dispose)
         {
-            ReactiveWebView?.Dispose();
+            ObservableWebView?.Dispose();
         }
     }
 }

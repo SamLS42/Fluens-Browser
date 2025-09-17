@@ -22,10 +22,8 @@ public sealed partial class AppTabContent : ReactiveAppTab, IDisposable
     {
         InitializeComponent();
 
-        this.WhenActivated(async d =>
+        this.WhenActivated(d =>
         {
-            await ActivateAsync();
-
             this.WhenAnyValue(x => x.ViewModel!.Url)
                 .Where(url => url == Constants.AboutBlankUri || url is null)
                 .Subscribe(_ => SearchBar.Focus(FocusState.Programmatic))
@@ -34,7 +32,7 @@ public sealed partial class AppTabContent : ReactiveAppTab, IDisposable
 
         this.WhenAnyValue(x => x.ViewModel)
             .WhereNotNull()
-            .Subscribe(vm => vm.ReactiveWebView = new ObservableWebView(WebView))
+            .Subscribe(vm => vm.ObservableWebView = new ObservableWebView(WebView))
             .DisposeWith(Disposables);
 
         Observable.FromEventPattern<WebView2, CoreWebView2NavigationCompletedEventArgs>(WebView, nameof(WebView.NavigationCompleted))
@@ -47,8 +45,6 @@ public sealed partial class AppTabContent : ReactiveAppTab, IDisposable
         this.OneWayBind(ViewModel, vm => vm.SettingsDialogIsOpen, v => v.ConfigBtn.IsChecked).DisposeWith(Disposables);
         this.OneWayBind(ViewModel, vm => vm.CanStop, v => v.StopBtn.Visibility).DisposeWith(Disposables);
         this.OneWayBind(ViewModel, vm => vm.CanRefresh, v => v.RefreshBtn.Visibility).DisposeWith(Disposables);
-        //this.OneWayBind(ViewModel, vm => vm.FaviconUrl, v => v.IconSource, IconSource.GetFromUrl).DisposeWith(Disposables);
-        //this.OneWayBind(ViewModel, vm => vm.DocumentTitle, v => v.Header, GetCorrectTitle).DisposeWith(Disposables);
 
         this.BindCommand(ViewModel, vm => vm.GoBack, v => v.GoBackBtn).DisposeWith(Disposables);
         this.BindCommand(ViewModel, vm => vm.GoForward, v => v.GoForwardBtn).DisposeWith(Disposables);
@@ -100,11 +96,6 @@ public sealed partial class AppTabContent : ReactiveAppTab, IDisposable
                 WebView.DefaultBackgroundColor = brush;
             })
             .DisposeWith(Disposables);
-    }
-
-    private async Task ActivateAsync()
-    {
-        await WebView.EnsureCoreWebView2Async();
     }
 
     private void DetectEnterKey(VirtualKey key)

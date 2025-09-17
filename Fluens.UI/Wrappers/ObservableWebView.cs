@@ -195,4 +195,9 @@ window.addEventListener('keydown', function (e) {
     {
         WebView.GoForward();
     }
+
+    public async Task ActivateAsync()
+    {
+        await WebView.EnsureCoreWebView2Async();
+    }
 }
