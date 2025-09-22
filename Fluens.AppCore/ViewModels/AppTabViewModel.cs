@@ -129,7 +129,7 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
                 ObservableWebView.KeyboardShortcuts.Subscribe(KeyboardShortcutsSource.OnNext);
             });
 
-        this.WhenAnyValue(x => x.IsSelected, x => x.ObservableWebView, (isSelected, web) => isSelected && web != null)
+        this.WhenAnyValue(x => x.IsSelected, x => x.ObservableWebView, x => x.Url, (isSelected, web, url) => isSelected && web != null && url != Constants.AboutBlankUri)
             .DistinctUntilChanged()
             .Where(ready => ready)
             .Subscribe(_ => Activate());

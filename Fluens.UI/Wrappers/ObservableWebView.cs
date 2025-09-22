@@ -174,6 +174,7 @@ window.addEventListener('keydown', function (e) {
 
     public void NavigateToUrl(Uri url)
     {
+        Observable.FromAsync(async _ => await WebView.EnsureCoreWebView2Async()).Subscribe();
         InitializedSource.Where(i => i).Take(1).Subscribe(e => WebView.Source = url);
     }
 

@@ -21,6 +21,7 @@ csharp_style_expression_bodied_lambdas = true:silent
 csharp_style_expression_bodied_local_functions = false:silent
 dotnet_diagnostic.CA1515.severity = none
 dotnet_diagnostic.CA1812.severity = suggestion
+csharp_style_prefer_simple_property_accessors = true:suggestion
 
 [*.{cs,vb}]
 #### Naming styles ####
@@ -92,4 +93,4 @@ dotnet_diagnostic.CA1822.severity = silent
 dotnet_diagnostic.CA1852.severity = none
 dotnet_diagnostic.CA1054.severity = suggestion
 dotnet_style_prefer_compound_assignment = true:suggestion
-dotnet_diagnostic.CA2000.severity = none
+dotnet_diagnostic.CA2000.severity = suggestion
