@@ -1,3 +1,4 @@
+using CommunityToolkit.WinUI;
 using DynamicData;
 using Fluens.AppCore.Helpers;
 using Fluens.AppCore.ViewModels;
@@ -26,7 +27,7 @@ public sealed partial class AppTabContent : ReactiveAppTab, IDisposable
         {
             this.WhenAnyValue(x => x.ViewModel!.Url)
                 .Where(url => url == Constants.AboutBlankUri || url is null)
-                .Subscribe(_ => SearchBar.Focus(FocusState.Programmatic))
+                .Subscribe(_ => SearchBar.DispatcherQueue.TryEnqueue(() => SearchBar.Focus(FocusState.Programmatic)))
                 .DisposeWith(d);
         });
 
@@ -52,11 +53,12 @@ public sealed partial class AppTabContent : ReactiveAppTab, IDisposable
         this.BindCommand(ViewModel, vm => vm.Stop, v => v.StopBtn).DisposeWith(Disposables);
         this.BindCommand(ViewModel, vm => vm.ToggleSettingsDialogCommand, v => v.ConfigBtn).DisposeWith(Disposables);
 
-        Observable.FromEventPattern<KeyRoutedEventArgs>(SearchBar, nameof(SearchBar.KeyDown))
-                .Subscribe(ep => DetectEnterKey(ep.EventArgs.Key));
+        Observable.FromEventPattern(SearchBar, nameof(SearchBar.Loaded))
+            .SelectMany(_ => Observable.FromEventPattern<KeyRoutedEventArgs>(SearchBar.FindDescendant<TextBox>()!, nameof(KeyDown)))
+            .Subscribe(ep => DetectEnterKey(ep.EventArgs.Key));
 
         Observable.FromEventPattern<RoutedEventArgs>(SearchBar, nameof(SearchBar.GotFocus))
-                .Subscribe(_ => SearchBar.SelectAll());
+                .Subscribe(_ => SearchBar.FindDescendant<TextBox>()!.SelectAll());
 
         Observable.FromEventPattern<SizeChangedEventArgs>(WebView, nameof(WebView.SizeChanged))
             .Subscribe(ep =>
