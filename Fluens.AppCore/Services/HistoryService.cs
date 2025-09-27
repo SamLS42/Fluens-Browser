@@ -4,10 +4,11 @@ using Fluens.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using ReactiveUI;
 using System.Collections.ObjectModel;
+using Toimik.UrlNormalization;
 
 namespace Fluens.AppCore.Services;
 
-public class HistoryService(IDbContextFactory<BrowserDbContext> dbContextFactory)
+public class HistoryService(IDbContextFactory<BrowserDbContext> dbContextFactory, HttpUrlNormalizer httpUrlNormalizer)
 {
     public async Task AddEntryAsync(Uri url, string faviconUrl, string documentTitle, CancellationToken cancellationToken = default)
     {
@@ -18,16 +19,25 @@ public class HistoryService(IDbContextFactory<BrowserDbContext> dbContextFactory
 
         await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 
-        HistoryEntry existentEntry = await dbContext.History.SingleOrDefaultAsync(e => e.Url == url.ToString(), cancellationToken: cancellationToken)
-            ?? (await dbContext.History.AddAsync(new HistoryEntry()
+        string normilizedUrl = httpUrlNormalizer.Normalize(url.ToString());
+
+        //Get or create place
+        Place place = await dbContext.Places.SingleOrDefaultAsync(e => e.NormalizedUrl == normilizedUrl, cancellationToken: cancellationToken)
+            ?? (await dbContext.Places.AddAsync(new Place()
             {
                 Url = url.ToString(),
+                NormalizedUrl = normilizedUrl,
                 FaviconUrl = faviconUrl,
-                DocumentTitle = documentTitle,
-                Host = url.Host,
+                Path = url.AbsolutePath,
+                Title = documentTitle,
+                Hostname = url.Host,
             }, cancellationToken)).Entity;
 
-        existentEntry.LastVisitedOn = DateTime.UtcNow;
+        //Create Visit
+        await dbContext.Visits.AddAsync(new()
+        {
+            Place = place,
+        }, cancellationToken);
 
         await dbContext.SaveChangesAsync(cancellationToken);
     }
@@ -39,29 +49,29 @@ public class HistoryService(IDbContextFactory<BrowserDbContext> dbContextFactory
         await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 
         // Fetch the items and determine if there are more
-        HistoryEntry[] items = await dbContext.History
-            .OrderByDescending(x => x.LastVisitedOn)
+        Place[] items = await dbContext.Places
+            .OrderByDescending(x => x.LastVisitDate)
             .ThenByDescending(x => x.Id) // tie-breaker
             .Where(e =>
                 lastDate == null ||
-                (e.LastVisitedOn < lastDate.Value) ||
-                (e.LastVisitedOn == lastDate.Value && e.Id < lastId))
+                (e.LastVisitDate < lastDate.Value) ||
+                (e.LastVisitDate == lastDate.Value && e.Id < lastId))
             .Take(limit + 1)
             .ToArrayAsync(cancellationToken);
 
         // Extract the cursor and ID for the next page
         bool hasMore = items.Length > limit;
         int? nextLastId = hasMore ? items[^1].Id : null;
-        DateTime? nextLastDate = hasMore ? items[^1].LastVisitedOn : null;
+        DateTime? nextLastDate = hasMore ? items[^1].LastVisitDate : null;
 
-        foreach (HistoryEntry item in items)
+        foreach (Place item in items)
         {
-            item.LastVisitedOn = item.LastVisitedOn.ToLocalTime();
+            item.LastVisitDate = item.LastVisitDate.ToLocalTime();
         }
 
         return new HistoryPage()
         {
-            Items = new ReadOnlyCollection<HistoryEntry>(hasMore ? [.. items.SkipLast(1)] : items),
+            Items = new ReadOnlyCollection<Place>(hasMore ? [.. items.SkipLast(1)] : items),
             NextLastDate = nextLastDate,
             NextLastId = nextLastId
         };
@@ -71,13 +81,13 @@ public class HistoryService(IDbContextFactory<BrowserDbContext> dbContextFactory
     {
         await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 
-        await dbContext.History.Where(e => ids.Contains(e.Id)).ExecuteDeleteAsync(cancellationToken);
+        await dbContext.Visits.Where(e => ids.Contains(e.Id)).ExecuteDeleteAsync(cancellationToken);
     }
 
     internal async Task ClearHistoryAsync(CancellationToken cancellationToken = default)
     {
         await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 
-        await dbContext.History.ExecuteDeleteAsync(cancellationToken);
+        await dbContext.Visits.ExecuteDeleteAsync(cancellationToken);
     }
 }

@@ -17,6 +17,7 @@ using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using ReactiveUI;
 using System.Reactive.Linq;
+using Toimik.UrlNormalization;
 using Windows.Graphics;
 
 namespace Fluens.UI;
@@ -51,6 +52,7 @@ public partial class App : Application
                     .AddSingleton<BrowserWindowService>()
                     .AddSingleton<HistoryService>()
                     .AddSingleton<ILocalSettingService, LocalSettingService>()
+                    .AddSingleton<HttpUrlNormalizer>()
                     .AddPooledDbContextFactory<BrowserDbContext>(opts =>
                     {
                         opts.UseSqlite("Data Source=BrowserStorage.db");

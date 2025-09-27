@@ -1,7 +1,6 @@
 ﻿using DynamicData;
 using Fluens.AppCore.Helpers;
 using Fluens.AppCore.Services;
-using Microsoft.CodeAnalysis;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using System.Reactive;
@@ -60,9 +59,9 @@ public partial class HistoryPageViewModel : ReactiveObject, IDisposable
                 Id = e.Id,
                 Url = new Uri(e.Url),
                 FaviconUrl = e.FaviconUrl,
-                DocumentTitle = e.DocumentTitle,
-                LastVisitedOn = e.LastVisitedOn,
-                Host = e.Host,
+                DocumentTitle = e.Title,
+                LastVisitedOn = e.LastVisitDate.ToLocalTime(),
+                Host = e.Hostname,
             }));
         });
 
