@@ -6,11 +6,12 @@ namespace Fluens.AppCore.Services;
 
 public class TabPersistencyService(IDbContextFactory<BrowserDbContext> dbContextFactory)
 {
-    public async Task<BrowserTab[]> RecoverTabsAsync()
+    public async Task<Tab[]> RecoverTabsAsync()
     {
         await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync();
 
-        BrowserTab[] openTabs = await dbContext.Tabs
+        Tab[] openTabs = await dbContext.Tabs
+            .Include(t => t.Place)
             .Where(t => t.ClosedOn == null)
             .OrderBy(t => t.Index)
             .AsNoTracking()
@@ -19,20 +20,20 @@ public class TabPersistencyService(IDbContextFactory<BrowserDbContext> dbContext
         return openTabs;
     }
 
-    public BrowserTab[] GetOpenTabs()
+    public Tab[] GetOpenTabs()
     {
         using BrowserDbContext dbContext = dbContextFactory.CreateDbContext();
 
-        BrowserTab[] openTabs = [.. dbContext.Tabs.OrderBy(t => t.Index).AsNoTracking()];
+        Tab[] openTabs = [.. dbContext.Tabs.OrderBy(t => t.Index).AsNoTracking()];
 
         return openTabs;
     }
 
-    public async Task<int> CreateTabAsync(Uri url, int windowId)
+    public async Task<int> CreateTabAsync(int windowId)
     {
         await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync();
 
-        BrowserTab entity = new() { Url = url.ToString(), BrowserWindowId = windowId };
+        Tab entity = new() { BrowserWindowId = windowId };
 
         dbContext.Tabs.Add(entity);
 
@@ -41,58 +42,31 @@ public class TabPersistencyService(IDbContextFactory<BrowserDbContext> dbContext
         return entity.Id;
     }
 
-    public async Task SetTabIndexAsync(int id, int index)
+    public async Task UpdateTabInfoAsync(int id, int? index = null, int? placeId = null, bool? isSelected = null, int? windowId = null, CancellationToken cancellationToken = default)
     {
-        await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync();
+        await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 
         await dbContext.Tabs
             .Where(t => t.Id == id)
-            .ExecuteUpdateAsync(u => u.SetProperty(t => t.Index, index));
-    }
-
-    public async Task SetTabUrlAsync(int id, Uri url)
-    {
-        await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync();
-
-        await dbContext.Tabs
-            .Where(t => t.Id == id)
-            .ExecuteUpdateAsync(u => u.SetProperty(t => t.Url, url.ToString()));
-    }
-
-    public async Task SetIsTabSelectedAsync(int id, bool isTabSelected)
-    {
-        await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync();
-
-        await dbContext.Tabs
-            .Where(t => t.Id == id)
-            .ExecuteUpdateAsync(u => u.SetProperty(t => t.IsSelected, isTabSelected));
-    }
-
-    public async Task SaveTabFaviconUrlAsync(int id, string faviconUrl)
-    {
-        await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync();
-
-        await dbContext.Tabs
-            .Where(t => t.Id == id)
-            .ExecuteUpdateAsync(u => u.SetProperty(t => t.FaviconUrl, faviconUrl));
-    }
-
-    public async Task SaveTabDocumentTitleAsync(int id, string documentTitle)
-    {
-        await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync();
-
-        await dbContext.Tabs
-            .Where(t => t.Id == id)
-            .ExecuteUpdateAsync(u => u.SetProperty(t => t.DocumentTitle, documentTitle));
-    }
-
-    public async Task SetWindowAsync(int id, int windowId)
-    {
-        await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync();
-
-        await dbContext.Tabs
-            .Where(t => t.Id == id)
-            .ExecuteUpdateAsync(u => u.SetProperty(t => t.BrowserWindowId, windowId));
+            .ExecuteUpdateAsync(u =>
+            {
+                if (index is not null)
+                {
+                    u.SetProperty(t => t.Index, index);
+                }
+                if (placeId is not null)
+                {
+                    u.SetProperty(t => t.PlaceId, placeId);
+                }
+                if (isSelected is not null)
+                {
+                    u.SetProperty(t => t.IsSelected, isSelected);
+                }
+                if (windowId is not null)
+                {
+                    u.SetProperty(t => t.BrowserWindowId, windowId);
+                }
+            }, cancellationToken: cancellationToken);
     }
 
     public async Task DeleteTabAsync(int id)
@@ -117,11 +91,11 @@ public class TabPersistencyService(IDbContextFactory<BrowserDbContext> dbContext
             .ExecuteUpdateAsync(setPropertyCalls => setPropertyCalls.SetProperty(t => t.ClosedOn, DateTime.UtcNow));
     }
 
-    public async Task<BrowserTab?> GetClosedTabAsync()
+    public async Task<Tab?> GetClosedTabAsync()
     {
         await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync();
 
-        BrowserTab? tab = await dbContext.Tabs
+        Tab? tab = await dbContext.Tabs
             .Where(t => t.ClosedOn != null)
             .OrderByDescending(t => t.ClosedOn)
             .AsNoTracking()

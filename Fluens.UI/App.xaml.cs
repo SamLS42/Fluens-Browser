@@ -50,9 +50,10 @@ public partial class App : Application
                     .AddSingleton<ITabPageManager, TabViewsManager>()
                     .AddSingleton<TabPersistencyService>()
                     .AddSingleton<BrowserWindowService>()
-                    .AddSingleton<HistoryService>()
+                    .AddSingleton<VisitsService>()
                     .AddSingleton<ILocalSettingService, LocalSettingService>()
                     .AddSingleton<HttpUrlNormalizer>()
+                    .AddSingleton<PlacesService>()
                     .AddPooledDbContextFactory<BrowserDbContext>(opts =>
                     {
                         opts.UseSqlite("Data Source=BrowserStorage.db");
@@ -77,6 +78,7 @@ public partial class App : Application
     {
         IDbContextFactory<BrowserDbContext> dbContextFactory = ServiceLocator.GetRequiredService<IDbContextFactory<BrowserDbContext>>();
         await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync();
+
         await dbContext.Database.MigrateAsync();
     }
 

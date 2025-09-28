@@ -55,7 +55,7 @@ public partial class AppPageViewModel : ReactiveObject, IDisposable
         });
     }
 
-    private readonly TabPersistencyService dataService = ServiceLocator.GetRequiredService<TabPersistencyService>();
+    private readonly TabPersistencyService TabPersistencyService = ServiceLocator.GetRequiredService<TabPersistencyService>();
 
     private readonly Subject<Unit> hasNoTabs = new();
 
@@ -95,7 +95,7 @@ public partial class AppPageViewModel : ReactiveObject, IDisposable
     public async Task CloseTabAsync(AppTabViewModel vm)
     {
         TabView.RemoveItem(vm);
-        await dataService.CloseTabAsync(vm.Id);
+        await TabPersistencyService.CloseTabAsync(vm.Id);
         vm.Dispose();
     }
 
@@ -106,7 +106,7 @@ public partial class AppPageViewModel : ReactiveObject, IDisposable
 
     public async Task<AppTabViewModel> CreateTabAsync(Uri? uri = null)
     {
-        int id = await dataService.CreateTabAsync(Constants.AboutBlankUri, WindowId);
+        int id = await TabPersistencyService.CreateTabAsync(WindowId);
 
         AppTabViewModel vm = new()
         {
@@ -168,9 +168,9 @@ public partial class AppPageViewModel : ReactiveObject, IDisposable
 
     private async Task RecoverStateAsync()
     {
-        BrowserTab[] tabs = await dataService.RecoverTabsAsync();
+        Tab[] tabs = await TabPersistencyService.RecoverTabsAsync();
 
-        foreach (BrowserTab tab in tabs)
+        foreach (Tab tab in tabs)
         {
             AppTabViewModel vm = tab.ToAppTabViewModel();
             vm.ParentWindowId = WindowId;
@@ -187,7 +187,7 @@ public partial class AppPageViewModel : ReactiveObject, IDisposable
 
     private async Task RestoreClosedTabAsync()
     {
-        BrowserTab? tabData = await dataService.GetClosedTabAsync();
+        Tab? tabData = await TabPersistencyService.GetClosedTabAsync();
 
         if (tabData == null)
         {

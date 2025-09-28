@@ -27,98 +27,15 @@ public sealed partial class ObservableWebView : IObservableWebView
     public IObservable<Uri> OpenNewTab => OpenNewTabSource.AsObservable();
     private Subject<ShortcutMessage> KeyboardShortcutsSource { get; set; } = new();
     public IObservable<ShortcutMessage> KeyboardShortcuts => KeyboardShortcutsSource.AsObservable();
-    private BehaviorSubject<bool> InitializedSource { get; set; } = new(false);
-    public IObservable<bool> Initialized => InitializedSource.AsObservable();
 
     public Uri? Source => WebView.Source;
+
+    private readonly Lazy<Task> EnsureInitializedCoreWebView2Async;
 
     public ObservableWebView(WebView2 webView)
     {
         WebView = webView;
-
-        Observable.FromEventPattern<WebView2, CoreWebView2InitializedEventArgs>(WebView, nameof(WebView.CoreWebView2Initialized))
-            .Subscribe(async ep =>
-        {
-            InitializedSource.OnNext(true);
-            await AddShortcutListenersAsync();
-
-            Observable.FromEventPattern(WebView.CoreWebView2, nameof(WebView.CoreWebView2.NavigationStarting))
-                .Select(_ => true)
-                .Merge(Observable.FromEventPattern(WebView.CoreWebView2, nameof(WebView.CoreWebView2.NavigationCompleted))
-                .Select(_ => false))
-                .Subscribe(v => IsNavigatingSource.OnNext(v));
-
-            Observable.FromEventPattern(WebView.CoreWebView2, nameof(WebView.CoreWebView2.DocumentTitleChanged))
-                .Select(_ => WebView.CoreWebView2.DocumentTitle)
-                .Subscribe(DocumentTitleSource.OnNext)
-                .DisposeWith(Disposables);
-
-            Observable.FromEventPattern<CoreWebView2, CoreWebView2NavigationStartingEventArgs>(WebView.CoreWebView2, nameof(WebView.CoreWebView2.NavigationStarting))
-                .Subscribe(ep =>
-                {
-                    FaviconUrlSource.OnNext(Constants.LoadingFaviconUri);
-                })
-                .DisposeWith(Disposables);
-
-            Observable.FromEventPattern<CoreWebView2, object>(WebView.CoreWebView2, nameof(WebView.CoreWebView2.FaviconChanged))
-                .Select(_ => WebView.CoreWebView2.FaviconUri)
-                .Where(x => !string.IsNullOrWhiteSpace(x))
-                .Subscribe(x => FaviconUrlSource.OnNext(x))
-                .DisposeWith(Disposables);
-
-            Observable.FromEventPattern<CoreWebView2, CoreWebView2NavigationCompletedEventArgs>(WebView.CoreWebView2, nameof(WebView.CoreWebView2.NavigationCompleted))
-                .Subscribe(async ep =>
-                {
-                    await AddShortcutListenersAsync();
-
-                    if (ep.EventArgs.IsSuccess)
-                    {
-                        if (WebView.Source == Constants.AboutBlankUri)
-                        {
-                            FaviconUrlSource.OnNext(string.Empty);
-                        }
-                        else
-                        {
-                            FaviconUrlSource.OnNext(WebView.CoreWebView2.FaviconUri);
-                        }
-                    }
-                })
-                .DisposeWith(Disposables);
-
-            Observable.FromEventPattern<CoreWebView2, object>(WebView.CoreWebView2, nameof(WebView.CoreWebView2.HistoryChanged))
-                .Select(ep => WebView.Source)
-                .Subscribe(UrlSource.OnNext)
-                .DisposeWith(Disposables);
-
-            Observable.FromEventPattern<CoreWebView2, CoreWebView2NewWindowRequestedEventArgs>(WebView.CoreWebView2, nameof(WebView.CoreWebView2.NewWindowRequested))
-                .Subscribe(ep =>
-                {
-                    ep.EventArgs.Handled = true;
-
-                    if (Uri.TryCreate(ep.EventArgs.Uri, UriKind.Absolute, out Uri? uri))
-                    {
-                        OpenNewTabSource.OnNext(uri);
-                    }
-                })
-                .DisposeWith(Disposables);
-
-            Observable.FromEventPattern<CoreWebView2, CoreWebView2WebMessageReceivedEventArgs>(WebView.CoreWebView2, nameof(WebView.CoreWebView2.WebMessageReceived))
-                .Subscribe(ep =>
-                {
-                    ShortcutMessage? message = JsonSerializer.Deserialize<ShortcutMessage>(ep.EventArgs.WebMessageAsJson);
-
-                    if (message == null)
-                    {
-                        Log_ShortcutMessage_Deserialization_Error(ep.EventArgs.WebMessageAsJson);
-                        return;
-                    }
-
-                    KeyboardShortcutsSource.OnNext(message);
-                })
-                .DisposeWith(Disposables);
-
-        })
-            .DisposeWith(Disposables);
+        EnsureInitializedCoreWebView2Async = new(() => EnsureCoreWebView2Async());
     }
 
     private async Task AddShortcutListenersAsync()
@@ -172,10 +89,92 @@ window.addEventListener('keydown', function (e) {
         WebView.Close();
     }
 
-    public void NavigateToUrl(Uri url)
+    public async Task NavigateToUrlAsync(Uri url)
     {
-        Observable.FromAsync(async _ => await WebView.EnsureCoreWebView2Async()).Subscribe();
-        InitializedSource.Where(i => i).Take(1).Subscribe(e => WebView.Source = url);
+        await EnsureInitializedCoreWebView2Async.Value;
+        WebView.Source = url;
+    }
+
+    private async Task EnsureCoreWebView2Async()
+    {
+        await WebView.EnsureCoreWebView2Async();
+
+        await AddShortcutListenersAsync();
+
+        Observable.FromEventPattern(WebView.CoreWebView2, nameof(WebView.CoreWebView2.NavigationStarting))
+            .Select(_ => true)
+            .Merge(Observable.FromEventPattern(WebView.CoreWebView2, nameof(WebView.CoreWebView2.NavigationCompleted))
+            .Select(_ => false))
+            .Subscribe(v => IsNavigatingSource.OnNext(v));
+
+        Observable.FromEventPattern(WebView.CoreWebView2, nameof(WebView.CoreWebView2.DocumentTitleChanged))
+            .Select(_ => WebView.CoreWebView2.DocumentTitle)
+            .Subscribe(DocumentTitleSource.OnNext)
+            .DisposeWith(Disposables);
+
+        Observable.FromEventPattern<CoreWebView2, CoreWebView2NavigationStartingEventArgs>(WebView.CoreWebView2, nameof(WebView.CoreWebView2.NavigationStarting))
+            .Subscribe(ep =>
+            {
+                FaviconUrlSource.OnNext(Constants.LoadingFaviconUri);
+            })
+            .DisposeWith(Disposables);
+
+        Observable.FromEventPattern<CoreWebView2, object>(WebView.CoreWebView2, nameof(WebView.CoreWebView2.FaviconChanged))
+            .Select(_ => WebView.CoreWebView2.FaviconUri)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Subscribe(x => FaviconUrlSource.OnNext(x))
+            .DisposeWith(Disposables);
+
+        Observable.FromEventPattern<CoreWebView2, CoreWebView2NavigationCompletedEventArgs>(WebView.CoreWebView2, nameof(WebView.CoreWebView2.NavigationCompleted))
+            .Subscribe(async ep =>
+            {
+                await AddShortcutListenersAsync();
+
+                if (ep.EventArgs.IsSuccess)
+                {
+                    if (WebView.Source == Constants.AboutBlankUri)
+                    {
+                        FaviconUrlSource.OnNext(string.Empty);
+                    }
+                    else
+                    {
+                        FaviconUrlSource.OnNext(WebView.CoreWebView2.FaviconUri);
+                    }
+                }
+            })
+            .DisposeWith(Disposables);
+
+        Observable.FromEventPattern<CoreWebView2, object>(WebView.CoreWebView2, nameof(WebView.CoreWebView2.HistoryChanged))
+            .Select(ep => WebView.Source)
+            .Subscribe(UrlSource.OnNext)
+            .DisposeWith(Disposables);
+
+        Observable.FromEventPattern<CoreWebView2, CoreWebView2NewWindowRequestedEventArgs>(WebView.CoreWebView2, nameof(WebView.CoreWebView2.NewWindowRequested))
+            .Subscribe(ep =>
+            {
+                ep.EventArgs.Handled = true;
+
+                if (Uri.TryCreate(ep.EventArgs.Uri, UriKind.Absolute, out Uri? uri))
+                {
+                    OpenNewTabSource.OnNext(uri);
+                }
+            })
+            .DisposeWith(Disposables);
+
+        Observable.FromEventPattern<CoreWebView2, CoreWebView2WebMessageReceivedEventArgs>(WebView.CoreWebView2, nameof(WebView.CoreWebView2.WebMessageReceived))
+            .Subscribe(ep =>
+            {
+                ShortcutMessage? message = JsonSerializer.Deserialize<ShortcutMessage>(ep.EventArgs.WebMessageAsJson);
+
+                if (message == null)
+                {
+                    Log_ShortcutMessage_Deserialization_Error(ep.EventArgs.WebMessageAsJson);
+                    return;
+                }
+
+                KeyboardShortcutsSource.OnNext(message);
+            })
+            .DisposeWith(Disposables);
     }
 
 

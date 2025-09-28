@@ -74,9 +74,9 @@ public sealed partial class AppTabContent : ReactiveAppTab, IDisposable
             )
             .Switch()
             .ObserveOn(RxApp.MainThreadScheduler)
-            .Subscribe(url =>
+            .Subscribe(async url =>
             {
-                WebView.Source = url;
+                await ViewModel!.ObservableWebView!.NavigateToUrlAsync(url);
                 ViewModel!.SettingsDialogIsOpen = false;
             })
             .DisposeWith(Disposables);
@@ -104,7 +104,7 @@ public sealed partial class AppTabContent : ReactiveAppTab, IDisposable
     {
         if (key == VirtualKey.Enter)
         {
-            ViewModel?.NavigateToInputComman.Execute().Subscribe();
+            ViewModel?.NavigateToInputCommand.Execute().Subscribe();
             WebView.Focus(FocusState.Programmatic);
         }
     }

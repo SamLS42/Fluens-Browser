@@ -5,7 +5,7 @@ namespace Fluens.Data;
 
 public class BrowserDbContext(DbContextOptions<BrowserDbContext> options) : DbContext(options)
 {
-    public DbSet<BrowserTab> Tabs { get; set; } = null!;
+    public DbSet<Tab> Tabs { get; set; } = null!;
     public DbSet<Visit> Visits { get; set; } = null!;
     public DbSet<Place> Places { get; set; } = null!;
     public DbSet<BrowserWindow> BrowserWindows { get; set; } = null!;

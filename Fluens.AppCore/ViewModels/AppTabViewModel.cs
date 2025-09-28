@@ -56,7 +56,6 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
     [Reactive]
     public partial int ParentWindowId { get; set; }
 
-    public ReactiveCommand<Unit, Unit> NavigateToInputComman { get; }
     public ReactiveCommand<Unit, Unit> Refresh { get; private set; } = null!;
     public ReactiveCommand<Unit, Unit> GoBack { get; private set; } = null!;
     public ReactiveCommand<Unit, Unit> GoForward { get; private set; } = null!;
@@ -64,43 +63,50 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
     public ReactiveCommand<Unit, Unit> ToggleSettingsDialogCommand { get; private set; }
 
     private TabPersistencyService TabPersistencyService { get; } = ServiceLocator.GetRequiredService<TabPersistencyService>();
-    private HistoryService HistoryService { get; } = ServiceLocator.GetRequiredService<HistoryService>();
+    private VisitsService VisitsService { get; } = ServiceLocator.GetRequiredService<VisitsService>();
+    private PlacesService PlacesService { get; } = ServiceLocator.GetRequiredService<PlacesService>();
     private ITabPageManager TabPageManager { get; } = ServiceLocator.GetRequiredService<ITabPageManager>();
 
     public AppTabViewModel()
     {
         ToggleSettingsDialogCommand = ReactiveCommand.Create(() => { SettingsDialogIsOpen = !SettingsDialogIsOpen; });
 
-        NavigateToInputComman = ReactiveCommand.Create(NavigateToInput);
-
         this.WhenAnyValue(x => x.Index, x => x.Id, (index, id) => new { index, id })
             .Where(i => i.index != null && i.id > 0)
-            .Subscribe(async i => await TabPersistencyService.SetTabIndexAsync(i.id, i.index!.Value));
-
-        this.WhenAnyValue(x => x.Url, x => x.Id, (url, id) => new { url, id })
-            .Where(i => i.url != null && i.id > 0)
-            .Subscribe(async i => await TabPersistencyService.SetTabUrlAsync(i.id, i.url));
+            .Subscribe(async i => await TabPersistencyService.UpdateTabInfoAsync(i.id, index: i.index));
 
         this.WhenAnyValue(x => x.ParentWindowId, x => x.Id, (parentWindowId, id) => new { parentWindowId, id })
             .Where(i => i.id > 0 && i.parentWindowId > 0)
-            .Subscribe(async i => await TabPersistencyService.SetWindowAsync(i.id, i.parentWindowId));
+            .Subscribe(async i => await TabPersistencyService.UpdateTabInfoAsync(i.id, windowId: i.parentWindowId));
 
-        this.WhenAnyValue(x => x.FaviconUrl, x => x.Id, (faviconUrl, id) => new { faviconUrl, id })
+        this.WhenAnyValue(x => x.IsSelected, x => x.Id, (IsSelected, id) => new { IsSelected, id })
             .Where(i => i.id > 0)
-            .Subscribe(async i => await TabPersistencyService.SaveTabFaviconUrlAsync(i.id, i.faviconUrl));
+            .Subscribe(async i => await TabPersistencyService.UpdateTabInfoAsync(i.id, isSelected: i.IsSelected));
 
-        this.WhenAnyValue(x => x.DocumentTitle, x => x.Id, (documentTitle, id) => new { documentTitle, id })
-            .Where(i => i.id > 0)
-            .Subscribe(async i => await TabPersistencyService.SaveTabDocumentTitleAsync(i.id, i.documentTitle));
-
-        this.WhenAnyValue(x => x.IsSelected, x => x.Id, (isSelected, id) => new { isSelected, id })
-            .Where(i => i.id > 0)
-            .Subscribe(async i => await TabPersistencyService.SetIsTabSelectedAsync(i.id, i.isSelected));
-
-        this.WhenAnyValue(x => x.Url, x => x.FaviconUrl, x => x.DocumentTitle, (url, faviconUrl, documentTitle) => new { url, faviconUrl, documentTitle })
-            .Where(obj => obj.url != null)
-            .Throttle(TimeSpan.FromSeconds(2))
-            .Subscribe(async i => await HistoryService.AddEntryAsync(i.url, i.faviconUrl, i.documentTitle));
+        // Updates the place in this tab and the place's favicon and title
+        this.WhenAnyValue(x => x.Url, x => x.Id, (url, id) => new { url, id })
+            .Where(i => i.url != null && i.url != Constants.AboutBlankUri && i.id > 0)
+            .ObserveOn(RxApp.TaskpoolScheduler)
+            .Select(i =>
+                Observable.FromAsync(async ct =>
+                {
+                    int placeId = await PlacesService.GetorCreatePlaceAsync(i.url, ct);
+                    await VisitsService.AddEntryAsync(placeId, ct);
+                    await TabPersistencyService.UpdateTabInfoAsync(i.id, placeId: placeId, cancellationToken: ct);
+                    return placeId;
+                })
+                .SelectMany(placeId => Observable.Merge(
+                        this.WhenAnyValue(x => x.FaviconUrl)
+                            .DistinctUntilChanged()
+                            .Where(v => !string.IsNullOrWhiteSpace(v) && v != Constants.LoadingFaviconUri)
+                            .SelectMany(v => Observable.FromAsync(() => PlacesService.UpdatePlaceAsync(placeId, faviconUrl: v))),
+                        this.WhenAnyValue(x => x.DocumentTitle)
+                            .DistinctUntilChanged()
+                            .Where(v => !string.IsNullOrWhiteSpace(v))
+                            .SelectMany(v => Observable.FromAsync(() => PlacesService.UpdatePlaceAsync(placeId, title: v))))
+                ))
+            .Switch()
+            .Subscribe();
 
         this.WhenAnyValue(x => x.Url)
             .WhereNotNull()
@@ -108,25 +114,25 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
 
         this.WhenAnyValue(x => x.ObservableWebView)
             .WhereNotNull()
-            .Subscribe(_ =>
+            .Subscribe(webView =>
             {
-                GoBack = ReactiveCommand.Create(ObservableWebView!.GoBack);
-                GoForward = ReactiveCommand.Create(ObservableWebView.GoForward);
-                Refresh = ReactiveCommand.Create(ObservableWebView.Refresh);
-                Stop = ReactiveCommand.Create(ObservableWebView.StopNavigation);
+                GoBack = ReactiveCommand.Create(webView!.GoBack);
+                GoForward = ReactiveCommand.Create(webView.GoForward);
+                Refresh = ReactiveCommand.Create(webView.Refresh);
+                Stop = ReactiveCommand.Create(webView.StopNavigation);
 
-                ObservableWebView.IsNavigating.Subscribe(SetStopRefreshVisibility);
-                ObservableWebView.Url.Subscribe(url => Url = url);
-                ObservableWebView.DocumentTitle.Subscribe(documentTitle => DocumentTitle = documentTitle);
-                ObservableWebView.FaviconUrl.Subscribe(faviconUrl => FaviconUrl = faviconUrl);
-                ObservableWebView.OpenNewTab.Subscribe(async uri =>
+                webView.IsNavigating.Subscribe(SetStopRefreshVisibility);
+                webView.Url.Subscribe(url => Url = url);
+                webView.DocumentTitle.Subscribe(documentTitle => DocumentTitle = documentTitle);
+                webView.FaviconUrl.Subscribe(faviconUrl => FaviconUrl = faviconUrl);
+                webView.OpenNewTab.Subscribe(async uri =>
                 {
                     IViewFor<AppPageViewModel> page = TabPageManager.GetParentTabPage(this);
                     AppTabViewModel vm = await page.ViewModel!.CreateTabAsync(uri);
                     page.ViewModel.CreateTabViewItem(vm);
                     vm.Activate();
                 });
-                ObservableWebView.KeyboardShortcuts.Subscribe(KeyboardShortcutsSource.OnNext);
+                webView.KeyboardShortcuts.Subscribe(KeyboardShortcutsSource.OnNext);
             });
 
         this.WhenAnyValue(x => x.IsSelected, x => x.ObservableWebView, x => x.Url, (isSelected, web, url) => isSelected && web != null && url != Constants.AboutBlankUri)
@@ -140,7 +146,8 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
         KeyboardShortcutsSource.OnNext(shortcutMessage);
     }
 
-    private void NavigateToInput()
+    [ReactiveCommand]
+    private async Task NavigateToInput()
     {
         // Normalize input
         string search = (SearchBarText ?? string.Empty).Trim();
@@ -175,7 +182,7 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
             url = new Uri($"https://duckduckgo.com/?q={query}");
         }
 
-        ObservableWebView?.NavigateToUrl(url);
+        await (ObservableWebView?.NavigateToUrlAsync(url) ?? Task.CompletedTask);
     }
 
     public void Activate()
@@ -194,7 +201,7 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
 
                 if (Url != ObservableWebView!.Source)
                 {
-                    ObservableWebView.NavigateToUrl(Url);
+                    await ObservableWebView!.NavigateToUrlAsync(Url);
                 }
             });
     }

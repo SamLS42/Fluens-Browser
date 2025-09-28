@@ -3,6 +3,7 @@ using System;
 using Fluens.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,12 +11,44 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Fluens.Data.Migrations
 {
     [DbContext(typeof(BrowserDbContext))]
-    partial class BrowserDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250928110744_UpdatePlacesAndTabs")]
+    partial class UpdatePlacesAndTabs
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.0-rc.1.25451.107");
+
+            modelBuilder.Entity("Fluens.Data.Entities.BrowserTab", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("BrowserWindowId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("ClosedOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Index")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsSelected")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("PlaceId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BrowserWindowId");
+
+                    b.HasIndex("PlaceId");
+
+                    b.ToTable("Tabs");
+                });
 
             modelBuilder.Entity("Fluens.Data.Entities.BrowserWindow", b =>
                 {
@@ -96,36 +129,6 @@ namespace Fluens.Data.Migrations
                     b.ToTable("Places");
                 });
 
-            modelBuilder.Entity("Fluens.Data.Entities.Tab", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("BrowserWindowId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime?>("ClosedOn")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("Index")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("IsSelected")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int?>("PlaceId")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BrowserWindowId");
-
-                    b.HasIndex("PlaceId");
-
-                    b.ToTable("Tabs");
-                });
-
             modelBuilder.Entity("Fluens.Data.Entities.Visit", b =>
                 {
                     b.Property<int>("Id")
@@ -151,7 +154,7 @@ namespace Fluens.Data.Migrations
                     b.ToTable("Visits");
                 });
 
-            modelBuilder.Entity("Fluens.Data.Entities.Tab", b =>
+            modelBuilder.Entity("Fluens.Data.Entities.BrowserTab", b =>
                 {
                     b.HasOne("Fluens.Data.Entities.BrowserWindow", "BrowserWindow")
                         .WithMany("Tabs")

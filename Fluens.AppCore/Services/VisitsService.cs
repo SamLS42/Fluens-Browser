@@ -4,40 +4,16 @@ using Fluens.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using ReactiveUI;
 using System.Collections.ObjectModel;
-using Toimik.UrlNormalization;
 
 namespace Fluens.AppCore.Services;
 
-public class HistoryService(IDbContextFactory<BrowserDbContext> dbContextFactory, HttpUrlNormalizer httpUrlNormalizer)
+public class VisitsService(IDbContextFactory<BrowserDbContext> dbContextFactory)
 {
-    public async Task AddEntryAsync(Uri url, string faviconUrl, string documentTitle, CancellationToken cancellationToken = default)
+    public async Task AddEntryAsync(int placeId, CancellationToken cancellationToken = default)
     {
-        if (url == Constants.AboutBlankUri)
-        {
-            return;
-        }
-
         await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 
-        string normilizedUrl = httpUrlNormalizer.Normalize(url.ToString());
-
-        //Get or create place
-        Place place = await dbContext.Places.SingleOrDefaultAsync(e => e.NormalizedUrl == normilizedUrl, cancellationToken: cancellationToken)
-            ?? (await dbContext.Places.AddAsync(new Place()
-            {
-                Url = url.ToString(),
-                NormalizedUrl = normilizedUrl,
-                FaviconUrl = faviconUrl,
-                Path = url.AbsolutePath,
-                Title = documentTitle,
-                Hostname = url.Host,
-            }, cancellationToken)).Entity;
-
-        //Create Visit
-        await dbContext.Visits.AddAsync(new()
-        {
-            Place = place,
-        }, cancellationToken);
+        await dbContext.Visits.AddAsync(new() { PlaceId = placeId }, cancellationToken);
 
         await dbContext.SaveChangesAsync(cancellationToken);
     }

@@ -9,5 +9,5 @@ public class BrowserWindow
     public int Height { get; set; }
     public bool IsMaximized { get; set; }
     public DateTime? ClosedOn { get; set; }
-    public ICollection<BrowserTab> Tabs { get; } = [];
+    public ICollection<Tab> Tabs { get; } = [];
 }

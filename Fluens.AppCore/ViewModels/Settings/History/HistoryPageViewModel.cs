@@ -23,7 +23,7 @@ public partial class HistoryPageViewModel : ReactiveObject, IDisposable
     private DateTime? NextLastDate { get; set; }
     private int? NextLastId { get; set; }
     private SourceList<HistoryEntryViewModel> EntriesSource { get; } = new();
-    private HistoryService HistoryService { get; } = ServiceLocator.GetRequiredService<HistoryService>();
+    private VisitsService HistoryService { get; } = ServiceLocator.GetRequiredService<VisitsService>();
 
     public HistoryPageViewModel()
     {
