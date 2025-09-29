@@ -63,8 +63,8 @@ public sealed partial class AppTabContent : ReactiveAppTab, IDisposable
         Observable.FromEventPattern<SizeChangedEventArgs>(WebView, nameof(WebView.SizeChanged))
             .Subscribe(ep =>
             {
-                SettingsDialogContent.Width = WebView.ActualWidth - (2 * SettingsDialogContent.Margin.Left);
-                SettingsDialogContent.Height = WebView.ActualHeight - (2 * SettingsDialogContent.Margin.Top);
+                SettingsDialogContent.Width = WebView.ActualWidth;
+                SettingsDialogContent.Height = WebView.ActualHeight;
             });
 
         this.WhenAnyValue(x => x.SettingsView.ViewModel.HistoryPageViewModel)
@@ -104,6 +104,7 @@ public sealed partial class AppTabContent : ReactiveAppTab, IDisposable
     {
         if (key == VirtualKey.Enter)
         {
+            SettingsPopup.IsOpen = false;
             ViewModel?.NavigateToInputCommand.Execute().Subscribe();
             WebView.Focus(FocusState.Programmatic);
         }

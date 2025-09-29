@@ -14,7 +14,7 @@ public class Place
     public required string Path { get; set; }
     public string Title { get; set; } = string.Empty;
     public int VisitCount { get; set; }
-    public DateTime LastVisitDate { get; set; } = DateTime.UtcNow;
+    public DateTime? LastVisitDate { get; set; }
     public int TypedCount { get; set; }
     public bool IsBookmarked { get; set; }
     public Collection<string> Tags { get; } = [];

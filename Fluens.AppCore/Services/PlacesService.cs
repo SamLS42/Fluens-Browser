@@ -22,6 +22,7 @@ public class PlacesService(IDbContextFactory<BrowserDbContext> dbContextFactory,
                 NormalizedUrl = normilizedUrl,
                 Path = url.AbsolutePath,
                 Hostname = url.Host,
+                LastVisitDate = DateTime.UtcNow,
             }, cancellationToken)).Entity;
 
         await dbContext.SaveChangesAsync(cancellationToken);

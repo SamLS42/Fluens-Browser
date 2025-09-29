@@ -83,31 +83,6 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
             .Where(i => i.id > 0)
             .Subscribe(async i => await TabPersistencyService.UpdateTabInfoAsync(i.id, isSelected: i.IsSelected));
 
-        // Updates the place in this tab and the place's favicon and title
-        this.WhenAnyValue(x => x.Url, x => x.Id, (url, id) => new { url, id })
-            .Where(i => i.url != null && i.url != Constants.AboutBlankUri && i.id > 0)
-            .ObserveOn(RxApp.TaskpoolScheduler)
-            .Select(i =>
-                Observable.FromAsync(async ct =>
-                {
-                    int placeId = await PlacesService.GetorCreatePlaceAsync(i.url, ct);
-                    await VisitsService.AddEntryAsync(placeId, ct);
-                    await TabPersistencyService.UpdateTabInfoAsync(i.id, placeId: placeId, cancellationToken: ct);
-                    return placeId;
-                })
-                .SelectMany(placeId => Observable.Merge(
-                        this.WhenAnyValue(x => x.FaviconUrl)
-                            .DistinctUntilChanged()
-                            .Where(v => !string.IsNullOrWhiteSpace(v) && v != Constants.LoadingFaviconUri)
-                            .SelectMany(v => Observable.FromAsync(() => PlacesService.UpdatePlaceAsync(placeId, faviconUrl: v))),
-                        this.WhenAnyValue(x => x.DocumentTitle)
-                            .DistinctUntilChanged()
-                            .Where(v => !string.IsNullOrWhiteSpace(v))
-                            .SelectMany(v => Observable.FromAsync(() => PlacesService.UpdatePlaceAsync(placeId, title: v))))
-                ))
-            .Switch()
-            .Subscribe();
-
         this.WhenAnyValue(x => x.Url)
             .WhereNotNull()
             .Subscribe(_ => UpdateSearchBar());
@@ -123,6 +98,31 @@ public partial class AppTabViewModel : ReactiveObject, IDisposable
 
                 webView.IsNavigating.Subscribe(SetStopRefreshVisibility);
                 webView.Url.Subscribe(url => Url = url);
+
+                // Updates the place in this tab and the place's favicon and title
+                webView.Url.Where(url => url != null && url != Constants.AboutBlankUri && Id > 0)
+                    .ObserveOn(RxApp.TaskpoolScheduler)
+                    .Select(url =>
+                        Observable.FromAsync(async ct =>
+                        {
+                            int placeId = await PlacesService.GetorCreatePlaceAsync(url, ct);
+                            await VisitsService.AddEntryAsync(placeId, ct);
+                            await TabPersistencyService.UpdateTabInfoAsync(Id, placeId: placeId, cancellationToken: ct);
+                            return placeId;
+                        })
+                        .SelectMany(placeId => Observable.Merge(
+                                this.WhenAnyValue(x => x.FaviconUrl)
+                                    .DistinctUntilChanged()
+                                    .Where(v => !string.IsNullOrWhiteSpace(v) && v != Constants.LoadingFaviconUri)
+                                    .SelectMany(v => Observable.FromAsync(() => PlacesService.UpdatePlaceAsync(placeId, faviconUrl: v))),
+                                this.WhenAnyValue(x => x.DocumentTitle)
+                                    .DistinctUntilChanged()
+                                    .Where(v => !string.IsNullOrWhiteSpace(v) && v != Constants.NewTabTitle)
+                                    .SelectMany(v => Observable.FromAsync(() => PlacesService.UpdatePlaceAsync(placeId, title: v))))
+                        ))
+                    .Switch()
+                    .Subscribe();
+
                 webView.DocumentTitle.Subscribe(documentTitle => DocumentTitle = documentTitle);
                 webView.FaviconUrl.Subscribe(faviconUrl => FaviconUrl = faviconUrl);
                 webView.OpenNewTab.Subscribe(async uri =>

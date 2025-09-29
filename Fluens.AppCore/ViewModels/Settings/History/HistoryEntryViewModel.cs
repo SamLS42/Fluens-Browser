@@ -19,5 +19,7 @@ public partial class HistoryEntryViewModel : ReactiveObject
     [Reactive]
     public partial string? Host { get; set; } = string.Empty;
 
+    public int PlaceId { get; set; }
+
     public ReactiveCommand<Unit, Unit> OpenUrl { get; } = ReactiveCommand.Create(() => { });
 }

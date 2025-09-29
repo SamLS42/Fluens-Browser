@@ -22,6 +22,13 @@ public sealed partial class HistoryPage : ReactiveHistoryPage, IDisposable
 
         ViewModel ??= ServiceLocator.GetRequiredService<HistoryPageViewModel>();
 
+        this.WhenActivated(d =>
+        {
+            ViewModel.RefreshCommand
+                .Execute()
+                .Subscribe();
+        });
+
         ViewModel.Entries.Connect()
             .GroupOn(vm => vm.LastVisitedOn.ToLongDateString())
             .Transform(group =>
@@ -47,7 +54,7 @@ public sealed partial class HistoryPage : ReactiveHistoryPage, IDisposable
         ViewModel.DeleteSelectedCommand.CanExecute
             .Subscribe(canExecute => DeleteSelectedBtn.Visibility = canExecute ? Visibility.Visible : Visibility.Collapsed);
 
-        this.OneWayBind(ViewModel, vm => vm.MoreAvailable, v => v.LoadMoreBtn.Visibility)
+        this.OneWayBind(ViewModel, vm => vm.MoreAvailable, v => v.LoadMoreBtn.Visibility, moreAvailable => moreAvailable is true ? Visibility.Visible : Visibility.Collapsed)
             .DisposeWith(_disposables);
 
         this.OneWayBind(ViewModel, vm => vm.CanSelectAll, v => v.SelectAllBtn.Visibility)

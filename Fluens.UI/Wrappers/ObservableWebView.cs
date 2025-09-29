@@ -145,8 +145,8 @@ window.addEventListener('keydown', function (e) {
             .DisposeWith(Disposables);
 
         Observable.FromEventPattern<CoreWebView2, object>(WebView.CoreWebView2, nameof(WebView.CoreWebView2.HistoryChanged))
-            .Select(ep => WebView.Source)
-            .Subscribe(UrlSource.OnNext)
+            .Select(ep => ep.Sender!.Source)
+            .Subscribe(source => UrlSource.OnNext(new Uri(source)))
             .DisposeWith(Disposables);
 
         Observable.FromEventPattern<CoreWebView2, CoreWebView2NewWindowRequestedEventArgs>(WebView.CoreWebView2, nameof(WebView.CoreWebView2.NewWindowRequested))

@@ -14,7 +14,6 @@ public class TabPersistencyService(IDbContextFactory<BrowserDbContext> dbContext
             .Include(t => t.Place)
             .Where(t => t.ClosedOn == null)
             .OrderBy(t => t.Index)
-            .AsNoTracking()
             .ToArrayAsync();
 
         return openTabs;
@@ -24,7 +23,7 @@ public class TabPersistencyService(IDbContextFactory<BrowserDbContext> dbContext
     {
         using BrowserDbContext dbContext = dbContextFactory.CreateDbContext();
 
-        Tab[] openTabs = [.. dbContext.Tabs.OrderBy(t => t.Index).AsNoTracking()];
+        Tab[] openTabs = [.. dbContext.Tabs.OrderBy(t => t.Index)];
 
         return openTabs;
     }
@@ -98,7 +97,6 @@ public class TabPersistencyService(IDbContextFactory<BrowserDbContext> dbContext
         Tab? tab = await dbContext.Tabs
             .Where(t => t.ClosedOn != null)
             .OrderByDescending(t => t.ClosedOn)
-            .AsNoTracking()
             .FirstOrDefaultAsync();
 
         if (tab != null)

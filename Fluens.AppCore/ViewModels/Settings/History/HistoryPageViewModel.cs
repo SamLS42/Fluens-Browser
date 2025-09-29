@@ -10,19 +10,22 @@ namespace Fluens.AppCore.ViewModels.Settings.History;
 
 public partial class HistoryPageViewModel : ReactiveObject, IDisposable
 {
-    public IObservableList<HistoryEntryViewModel> Entries => EntriesSource.AsObservableList();
+
     [Reactive]
-    public partial bool MoreAvailable { get; set; } = true;
+    public partial bool? MoreAvailable { get; set; }
+
     [Reactive]
     public partial bool CanSelectAll { get; set; }
+
     [Reactive]
     public partial List<HistoryEntryViewModel> SelectedEntries { get; set; } = [];
-    public ReactiveCommand<int, Unit> LoadHistoryCommand { get; }
+
     public ReactiveCommand<Unit, Unit> DeleteSelectedCommand { get; }
     public ReactiveCommand<Unit, Unit> ClearHistoryCommand { get; }
     private DateTime? NextLastDate { get; set; }
     private int? NextLastId { get; set; }
     private SourceList<HistoryEntryViewModel> EntriesSource { get; } = new();
+    public IObservableList<HistoryEntryViewModel> Entries => EntriesSource.AsObservableList();
     private VisitsService HistoryService { get; } = ServiceLocator.GetRequiredService<VisitsService>();
 
     public HistoryPageViewModel()
@@ -35,7 +38,6 @@ public partial class HistoryPageViewModel : ReactiveObject, IDisposable
 
         DeleteSelectedCommand = ReactiveCommand.CreateFromTask(DeleteSelectedAsync, anyEntryIsSelected);
         ClearHistoryCommand = ReactiveCommand.CreateFromTask(HistoryService.ClearHistoryAsync);
-        LoadHistoryCommand = ReactiveCommand.CreateFromTask<int>(LoadHistoryAsync);
     }
 
     private void UpdateActionsVisibility()
@@ -43,9 +45,10 @@ public partial class HistoryPageViewModel : ReactiveObject, IDisposable
         CanSelectAll = EntriesSource.Count == 0 || SelectedEntries.Count != EntriesSource.Count;
     }
 
+    [ReactiveCommand]
     private async Task LoadHistoryAsync(int limit, CancellationToken cancellationToken = default)
     {
-        if (!MoreAvailable)
+        if (MoreAvailable is not null and false)
         {
             return;
         }
@@ -54,15 +57,7 @@ public partial class HistoryPageViewModel : ReactiveObject, IDisposable
 
         EntriesSource.Edit(updateAction =>
         {
-            updateAction.AddRange(elementsPage.Items.Select(e => new HistoryEntryViewModel()
-            {
-                Id = e.Id,
-                Url = new Uri(e.Url),
-                FaviconUrl = e.FaviconUrl,
-                DocumentTitle = e.Title,
-                LastVisitedOn = e.LastVisitDate.ToLocalTime(),
-                Host = e.Hostname,
-            }));
+            updateAction.AddRange(elementsPage.Items);
         });
 
         NextLastId = elementsPage.NextLastId;
@@ -71,21 +66,23 @@ public partial class HistoryPageViewModel : ReactiveObject, IDisposable
         MoreAvailable = NextLastId is not null;
     }
 
-    private async Task DeleteSelectedAsync(CancellationToken cancellationToken = default)
+    [ReactiveCommand]
+    private async Task RefreshAsync(CancellationToken cancellationToken = default)
     {
-        await HistoryService.DeleteEntriesAsync([.. SelectedEntries.Select(e => e.Id)], cancellationToken);
+        MoreAvailable = default;
+        NextLastDate = default;
+        NextLastId = default;
 
         EntriesSource.Clear();
-        ResetCursors();
 
         await LoadHistoryAsync(Constants.HistoryPaginationSize, cancellationToken);
     }
 
-    private void ResetCursors()
+    private async Task DeleteSelectedAsync(CancellationToken cancellationToken = default)
     {
-        NextLastId = null;
-        NextLastDate = null;
-        MoreAvailable = true;
+        await HistoryService.DeleteEntriesAsync([.. SelectedEntries.Select(e => e.PlaceId)], cancellationToken);
+
+        await RefreshAsync(cancellationToken);
     }
 
     public void Dispose()

@@ -13,7 +13,6 @@ public class BrowserWindowService(IDbContextFactory<BrowserDbContext> dbContextF
         BrowserWindow? lastWindow = await dbContext.BrowserWindows
             .Where(t => t.ClosedOn != null)
             .OrderByDescending(t => t.ClosedOn)
-            .AsNoTracking()
             .FirstOrDefaultAsync();
 
         return lastWindow;

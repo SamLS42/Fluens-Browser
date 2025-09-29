@@ -56,7 +56,8 @@ public partial class App : Application
                     .AddSingleton<PlacesService>()
                     .AddPooledDbContextFactory<BrowserDbContext>(opts =>
                     {
-                        opts.UseSqlite("Data Source=BrowserStorage.db");
+                        opts.UseSqlite("Data Source=BrowserStorage.db")
+                            .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
                     });
             })
             .Build();

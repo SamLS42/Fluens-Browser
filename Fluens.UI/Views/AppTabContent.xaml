@@ -101,21 +101,16 @@
                 Grid.Row="1"
                 DefaultBackgroundColor="{StaticResource SolidBackgroundFillColorTertiary}" />
 
+            <Popup
+                x:Name="SettingsPopup"
+                Grid.Row="1"
+                IsLightDismissEnabled="False"
+                LightDismissOverlayMode="On">
+                <Border x:Name="SettingsDialogContent">
+                    <settings:SettingsView x:Name="SettingsView" />
+                </Border>
+            </Popup>
         </Grid>
-        <Popup
-            x:Name="SettingsPopup"
-            Grid.Row="1"
-            IsLightDismissEnabled="False"
-            LightDismissOverlayMode="On">
-            <Border
-                x:Name="SettingsDialogContent"
-                Margin="64"
-                BorderBrush="{StaticResource ContentDialogBorderThemeBrush}"
-                BorderThickness="{StaticResource ContentDialogBorderWidth}"
-                CornerRadius="{StaticResource OverlayCornerRadius}">
-                <settings:SettingsView x:Name="SettingsView" />
-            </Border>
-        </Popup>
     </Grid>
 
 </local:ReactiveAppTab>

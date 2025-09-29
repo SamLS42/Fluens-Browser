@@ -1,4 +1,5 @@
 ﻿using Fluens.AppCore.Helpers;
+using Fluens.AppCore.ViewModels.Settings.History;
 using Fluens.Data;
 using Fluens.Data.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -15,6 +16,13 @@ public class VisitsService(IDbContextFactory<BrowserDbContext> dbContextFactory)
 
         await dbContext.Visits.AddAsync(new() { PlaceId = placeId }, cancellationToken);
 
+        await dbContext.Places.Where(p => p.Id == placeId)
+            .ExecuteUpdateAsync(u =>
+            {
+                u.SetProperty(p => p.VisitCount, p => p.VisitCount + 1);
+                u.SetProperty(p => p.LastVisitDate, DateTime.UtcNow);
+            }, cancellationToken: cancellationToken);
+
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 
@@ -25,39 +33,54 @@ public class VisitsService(IDbContextFactory<BrowserDbContext> dbContextFactory)
         await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 
         // Fetch the items and determine if there are more
-        Place[] items = await dbContext.Places
-            .OrderByDescending(x => x.LastVisitDate)
-            .ThenByDescending(x => x.Id) // tie-breaker
+        IQueryable<int> latestIdsQuery = dbContext.Visits
+            .GroupBy(v => v.PlaceId)
+            .Select(g => g.OrderByDescending(v => v.VisitDate)
+                          .ThenByDescending(v => v.Id)
+                          .Select(v => v.Id)
+                          .FirstOrDefault());
+
+        Visit[] visits = await dbContext.Visits
+            .Where(v => latestIdsQuery.Contains(v.Id))
+            .Include(v => v.Place)
             .Where(e =>
                 lastDate == null ||
-                (e.LastVisitDate < lastDate.Value) ||
-                (e.LastVisitDate == lastDate.Value && e.Id < lastId))
+                e.VisitDate < lastDate.Value ||
+                (e.VisitDate == lastDate.Value && e.Id < lastId))
+            .OrderByDescending(v => v.VisitDate)
+            .ThenByDescending(v => v.Id)
             .Take(limit + 1)
             .ToArrayAsync(cancellationToken);
 
         // Extract the cursor and ID for the next page
-        bool hasMore = items.Length > limit;
-        int? nextLastId = hasMore ? items[^1].Id : null;
-        DateTime? nextLastDate = hasMore ? items[^1].LastVisitDate : null;
+        bool hasMore = visits.Length > limit;
+        int? nextLastId = hasMore ? visits[^1].Id : null;
+        DateTime? nextLastDate = hasMore ? visits[^1].VisitDate : null;
 
-        foreach (Place item in items)
+        IEnumerable<HistoryEntryViewModel> items = visits.Select(v => new HistoryEntryViewModel()
         {
-            item.LastVisitDate = item.LastVisitDate.ToLocalTime();
-        }
+            Id = v.Id,
+            Url = new Uri(v.Place.Url),
+            FaviconUrl = v.Place.FaviconUrl,
+            DocumentTitle = v.Place.Title,
+            LastVisitedOn = v.VisitDate.ToLocalTime(),
+            Host = v.Place.Hostname,
+            PlaceId = v.PlaceId,
+        });
 
         return new HistoryPage()
         {
-            Items = new ReadOnlyCollection<Place>(hasMore ? [.. items.SkipLast(1)] : items),
+            Items = new ReadOnlyCollection<HistoryEntryViewModel>([.. hasMore ? items.SkipLast(1) : items]),
             NextLastDate = nextLastDate,
             NextLastId = nextLastId
         };
     }
 
-    internal async Task DeleteEntriesAsync(int[] ids, CancellationToken cancellationToken = default)
+    internal async Task DeleteEntriesAsync(int[] placeIds, CancellationToken cancellationToken = default)
     {
         await using BrowserDbContext dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 
-        await dbContext.Visits.Where(e => ids.Contains(e.Id)).ExecuteDeleteAsync(cancellationToken);
+        await dbContext.Visits.Where(e => placeIds.Contains(e.PlaceId)).ExecuteDeleteAsync(cancellationToken);
     }
 
     internal async Task ClearHistoryAsync(CancellationToken cancellationToken = default)
