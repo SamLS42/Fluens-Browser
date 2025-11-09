@@ -2,7 +2,6 @@
 using Fluens.AppCore.Enums;
 using Fluens.AppCore.Helpers;
 using Fluens.AppCore.Services;
-using Fluens.AppCore.ViewModels;
 using Fluens.AppCore.ViewModels.Settings;
 using Fluens.AppCore.ViewModels.Settings.History;
 using Fluens.AppCore.ViewModels.Settings.OnStartup;
@@ -42,10 +41,9 @@ public partial class App : Application
                     builder.SetMinimumLevel(LogLevel.Information);
                 });
 
-                services.AddTransient<AppPageViewModel>()
-                    .AddSingleton<OnStartupConfigViewModel>()
-                    .AddTransient<HistoryPageViewModel>()
-                    .AddTransient<SettingsViewModel>()
+                services.AddSingleton<OnStartupConfigViewModel>()
+                    .AddSingleton<HistoryPageViewModel>()
+                    .AddSingleton<SettingsViewModel>()
                     .AddSingleton<WindowsManager>()
                     .AddSingleton<ITabPageManager, TabViewsManager>()
                     .AddSingleton<TabPersistencyService>()

@@ -1,7 +1,7 @@
 using Fluens.AppCore.ViewModels.Settings.History;
 using Fluens.UI.Helpers;
 using ReactiveUI;
-using System.Reactive.Disposables;
+using System.Reactive.Disposables.Fluent;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.

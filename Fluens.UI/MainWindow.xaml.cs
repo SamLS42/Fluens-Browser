@@ -3,6 +3,7 @@ using Fluens.AppCore.ViewModels;
 using Microsoft.UI.Xaml;
 using ReactiveUI;
 using System.Reactive.Disposables;
+using System.Reactive.Disposables.Fluent;
 using System.Reactive.Linq;
 using WinRT;
 

@@ -7,6 +7,7 @@ using Microsoft.UI.Xaml.Input;
 using ReactiveUI;
 using System.Collections.ObjectModel;
 using System.Reactive.Disposables;
+using System.Reactive.Disposables.Fluent;
 using System.Reactive.Linq;
 
 namespace Fluens.UI.Views.Settings.History;
