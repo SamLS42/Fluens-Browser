@@ -2,15 +2,6 @@
 
 A modern, lightweight web browser built with WinUI 3 for Windows, designed for speed and simplicity.
 
-## Features
-
-- **Tabbed Browsing**: Create, close, and manage multiple tabs with full persistence across sessions.
-- **History Tracking**: Automatically track and display browsing history with visit counts and dates.
-- **Bookmarks**: Save and organize your favorite websites with folders and notes.
-- **Startup Options**: Customize what happens when the browser starts, including restoring previous tabs or opening a new tab.
-- **Keyboard Shortcuts**: Efficient navigation with shortcuts like Ctrl+T (new tab), Ctrl+W (close tab), and F5 (refresh).
-- **Local Storage**: Uses SQLite for fast, local data storage of tabs, history, and bookmarks.
-
 ## Requirements
 
 - Windows 10 version 1903 (19H1) or later
